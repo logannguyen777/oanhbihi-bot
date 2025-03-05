@@ -1,0 +1,19 @@
+{
+    "name": "chatbot-ui",
+    "version": "1.0.0",
+    "dependencies": {
+      "next": "latest",
+      "react": "latest",
+      "react-dom": "latest",
+      "axios": "latest",
+      "framer-motion": "^10.0.0",
+      "lucide-react": "^0.292.0",
+      "@radix-ui/react-scroll-area": "^1.0.0"
+    },
+    "scripts": {
+      "dev": "next dev -p 3000",
+      "build": "next build",
+      "start": "next start"
+    }
+  }
+  
