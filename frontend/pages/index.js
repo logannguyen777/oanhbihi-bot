@@ -1,10 +1,12 @@
-import ChatbotUI from "../components/ChatbotUI";
+import { useEffect } from "react";
+import { useRouter } from "next/router";
 
 export default function Home() {
-  return (
-    <div>
-      <h1 style={{ textAlign: "center" }}>Chat với Oanh Bihi 🤖</h1>
-      <ChatbotUI />
-    </div>
-  );
+  const router = useRouter();
+
+  useEffect(() => {
+    router.replace("/login"); // Tự chuyển hướng về login
+  }, []);
+
+  return null;
 }

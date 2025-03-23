@@ -7,3 +7,8 @@ psycopg2-binary
 pgvector
 numpy
 pydantic
+sqlalchemy
+aiofiles
+python-multipart
+python-socketio
+fastapi-socketio

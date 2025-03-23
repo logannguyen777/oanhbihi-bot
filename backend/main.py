@@ -9,8 +9,20 @@ import numpy as np
 from fastapi.middleware.cors import CORSMiddleware
 import requests
 from bs4 import BeautifulSoup
+from fastapi_socketio import SocketManager
+
+
+from database import Base, engine
+from routers import messenger, config, training, chat
+from models import MessengerConfig, BotPersona, CrawlConfig
+
 
 app = FastAPI()
+
+sio = SocketManager(app=app)
+
+
+Base.metadata.create_all(bind=engine)
 
 app.add_middleware(
     CORSMiddleware,
@@ -285,6 +297,17 @@ async def chat(request: ChatRequest):
     except Exception as e:
         print(f"⚠️ Lỗi xử lý chatbot: {e}")
         return {"error": f"Đã xảy ra lỗi: {e}"}
+
+
+# =======================
+# 🚀 Kết nối router
+# =======================
+
+
+app.include_router(messenger.router)
+app.include_router(config.router)
+app.include_router(training.router)
+app.include_router(chat.router)
 
 # =======================
 # 🚀 API XEM LỊCH SỬ CHAT

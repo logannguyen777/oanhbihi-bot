@@ -4,6 +4,7 @@ from openai import OpenAI
 client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY", None))
 import numpy as np
 from pgvector.psycopg2 import register_vector
+import openai
 
 # ==========================
 # 🚀 Cấu hình database
