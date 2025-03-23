@@ -12,3 +12,4 @@ aiofiles
 python-multipart
 python-socketio
 fastapi-socketio
+passlib[bcrypt]

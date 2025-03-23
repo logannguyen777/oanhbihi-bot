@@ -1,107 +1,77 @@
-import { useEffect, useState, useRef } from "react";
+import { useState } from "react";
 import Layout from "@/components/Layout";
-import AuthGuard from "@/components/AuthGuard";
+import { apiFetch } from "@/hooks/useApi";
+import Image from "next/image";
 
 export default function ChatPage() {
-  const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
-  const [isTyping, setIsTyping] = useState(false);
-  const chatEndRef = useRef();
+  const [messages, setMessages] = useState([]);
+  const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
-
-  const handleSend = async () => {
+  const sendMessage = async () => {
     if (!input.trim()) return;
-
-    const userMsg = { role: "user", content: input };
+    const userMsg = { sender: "user", text: input };
     setMessages((prev) => [...prev, userMsg]);
     setInput("");
-    setIsTyping(true);
+    setLoading(true);
 
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/chat`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
-        body: JSON.stringify({ message: input }),
-      });
-      const data = await res.json();
-      setMessages((prev) => [...prev, { role: "assistant", content: data.answer }]);
+      const res = await apiFetch("/chat", "POST", { input_text: input });
+      const botMsg = { sender: "bot", text: res.response || "(Không có phản hồi 🤖)" };
+      setMessages((prev) => [...prev, botMsg]);
     } catch (err) {
-      setMessages((prev) => [
-        ...prev,
-        { role: "assistant", content: "Oops! Có lỗi xảy ra 😢" },
-      ]);
+      const errMsg = { sender: "bot", text: "⚠️ Lỗi khi gọi bot: " + err.message };
+      setMessages((prev) => [...prev, errMsg]);
     } finally {
-      setIsTyping(false);
-    }
-  };
-
-  const handleKeyDown = (e) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      handleSend();
+      setLoading(false);
     }
   };
 
   return (
-    <AuthGuard>
-      <Layout>
-        <div className="h-[80vh] flex flex-col bg-white rounded-xl shadow-lg p-4">
-          <div className="flex-1 overflow-y-auto space-y-4 px-2">
-            {messages.map((msg, i) => (
-              <div key={i} className={`chat ${msg.role === "user" ? "chat-end" : "chat-start"}`}>
-                <div className="chat-image avatar">
-                  <div className="w-10 rounded-full">
-                    <img
-                      alt="avatar"
-                      src={msg.role === "user" ? "/user.png" : "/logo.png"}
-                    />
-                  </div>
-                </div>
-                <div
-                  className={`chat-bubble ${
-                    msg.role === "user" ? "chat-bubble-info" : "chat-bubble-primary"
-                  }`}
-                >
-                  {msg.content}
-                </div>
-              </div>
-            ))}
-            {isTyping && (
-              <div className="chat chat-start">
-                <div className="chat-image avatar">
-                  <div className="w-10 rounded-full">
-                    <img alt="Oanh Bihi" src="/logo.png" />
-                  </div>
-                </div>
-                <div className="chat-bubble chat-bubble-primary animate-pulse">
-                  Oanh Bihi đang nghĩ... 🤔
-                </div>
-              </div>
-            )}
-            <div ref={chatEndRef} />
-          </div>
+    <Layout>
+      <div className="max-w-3xl mx-auto px-4 py-6">
+        <h2 className="text-2xl font-bold text-purple-700 mb-4">🎀 Trò chuyện với Oanh Bihi</h2>
 
-          <div className="mt-4 flex gap-2">
-            <textarea
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={handleKeyDown}
-              placeholder="Nhập câu hỏi cho Oanh Bihi..."
-              className="textarea textarea-bordered w-full resize-none"
-              rows={2}
-            />
-            <button className="btn btn-primary" onClick={handleSend}>
-              Gửi 💌
-            </button>
-          </div>
+        <div className="bg-white shadow rounded p-4 h-[60vh] overflow-y-auto border mb-4">
+          {messages.map((msg, idx) => (
+            <div key={idx} className={`flex mb-3 ${msg.sender === "user" ? "justify-end" : "justify-start"}`}>
+              {msg.sender === "bot" && (
+                <Image
+                  src="/oanhbihi-avatar.png"
+                  width={36}
+                  height={36}
+                  alt="bot"
+                  className="rounded-full mr-2"
+                />
+              )}
+              <div className={`px-4 py-2 rounded-lg text-sm max-w-[70%] ${msg.sender === "user" ? "bg-purple-100" : "bg-pink-50 border"}`}>
+                {msg.text}
+              </div>
+            </div>
+          ))}
+
+          {loading && (
+            <div className="flex items-center gap-2 text-sm text-gray-400">
+              <Image src="/oanhbihi-avatar.png" width={24} height={24} alt="typing" />
+              <span>Oanh Bihi đang gõ...</span>
+            </div>
+          )}
         </div>
-      </Layout>
-    </AuthGuard>
+
+        <div className="flex gap-2">
+          <input
+            type="text"
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            className="input input-bordered flex-1"
+            placeholder="Nhập câu hỏi của bạn..."
+            onKeyDown={(e) => e.key === "Enter" && sendMessage()}
+          />
+          <button className="btn btn-primary" onClick={sendMessage} disabled={loading}>
+            Gửi
+          </button>
+        </div>
+      </div>
+    </Layout>
   );
 }

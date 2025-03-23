@@ -13,7 +13,8 @@ from fastapi_socketio import SocketManager
 
 
 from database import Base, engine
-from routers import zalo, messenger, config, training
+from routers import zalo, messenger, config, training, auth
+from routers.admin_chat import get_admin_chat_router
 from routers.chat import router as chat_router
 from models import MessengerConfig, BotPersona, CrawlConfig
 
@@ -310,6 +311,8 @@ app.include_router(config.router)
 app.include_router(messenger.router)
 app.include_router(zalo.router)
 app.include_router(training.router)
+app.include_router(auth.router)
+app.include_router(get_admin_chat_router(sio))
 
 # =======================
 # 🚀 API XEM LỊCH SỬ CHAT
