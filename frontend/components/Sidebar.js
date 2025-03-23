@@ -1,38 +1,32 @@
 import Link from "next/link";
 import { useRouter } from "next/router";
 
-const Sidebar = () => {
-  const router = useRouter();
-  const navItems = [
-    { label: "Tổng quan", path: "/dashboard" },
-    { label: "Cấu hình OpenAI", path: "/dashboard/openai" },
-    { label: "Cấu hình Messenger", path: "/dashboard/messenger" },
-    { label: "Cấu hình Bot & Personas", path: "/dashboard/bot-config" },
-    { label: "Cấu hình Crawl dữ liệu", path: "/dashboard/crawl" },
-    { label: "Tài liệu huấn luyện", path: "/dashboard/training" },
-    { label: "Logs", path: "/dashboard/logs" },
-  ];
+const items = [
+  { label: "Dashboard", href: "/dashboard" },
+  { label: "Chatbot", href: "/chat" },
+  { label: "Cấu hình", href: "/settings" },
+  { label: "Admin Chat", href: "/admin_chat" },
+];
 
+export default function Sidebar() {
+  const router = useRouter();
   return (
-    <aside className="w-64 h-screen bg-white shadow-md p-4 sticky top-0">
-      <h2 className="text-2xl font-bold text-pink-600 mb-6">Oanh Bihi 💖</h2>
-      <nav className="space-y-2">
-        {navItems.map((item) => (
-          <Link key={item.path} href={item.path}>
-            <div
-              className={`p-2 rounded-lg cursor-pointer font-medium text-sm transition-all ${
-                router.pathname === item.path
-                  ? "bg-pink-100 text-pink-600"
-                  : "text-gray-700 hover:bg-pink-50"
+    <div className="w-64 bg-white border-r shadow-md p-4 space-y-4">
+      <h2 className="text-2xl font-bold text-purple-600">🌸 Oanh Bihi</h2>
+      <ul className="menu">
+        {items.map((item) => (
+          <li key={item.href}>
+            <Link
+              href={item.href}
+              className={`${
+                router.pathname === item.href ? "active bg-purple-200" : ""
               }`}
             >
               {item.label}
-            </div>
-          </Link>
+            </Link>
+          </li>
         ))}
-      </nav>
-    </aside>
+      </ul>
+    </div>
   );
-};
-
-export default Sidebar;
+}

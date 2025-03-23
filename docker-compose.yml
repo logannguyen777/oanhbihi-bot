@@ -44,7 +44,7 @@ services:
     container_name: oanhbihi-frontend
     restart: always
     environment:
-      - NEXT_PUBLIC_BACKEND_URL=http://oanhbihi-backend:8000
+      - NEXT_PUBLIC_BACKEND_URL=http://oanhbihi-backend:8000/api
     ports:
       - "3000:3000"
     networks:

@@ -14,12 +14,12 @@ echo "✅ Extension vector đã được cài đặt!"
 #echo "🚀 Chạy migrate database..."
 #python migrate.py  # Nếu có script migrate thì thêm dòng này
 
-echo "🚀 Chạy crawler để thu thập dữ liệu..."
-python crawl_data.py
+#echo "🚀 Chạy crawler để thu thập dữ liệu..."
+#python crawl_data.py
 
-echo "🚀 Chạy training để tạo embeddings..."
-python train_data.py
+#echo "🚀 Chạy training để tạo embeddings..."
+#python train_data.py
 
 echo "🚀 Khởi động Backend..."
 # Khởi động server FastAPI bằng Uvicorn
-uvicorn backend.main:app --host 0.0.0.0 --port 8000 --reload
+uvicorn main:app --host 0.0.0.0 --port 8000 --reload

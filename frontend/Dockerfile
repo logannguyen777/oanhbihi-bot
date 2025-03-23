@@ -1,13 +1,22 @@
-FROM node:18-alpine
+# Stage 1: Build
+FROM node:18-alpine AS builder
 
 WORKDIR /app
-
-COPY package.json package-lock.json ./
+COPY package*.json ./
 RUN npm install
 
 COPY . .
-
 RUN npm run build
 
+# Stage 2: Run
+FROM node:18-alpine
+
+ENV NODE_ENV=production
+WORKDIR /app
+
+COPY --from=builder /app ./
+RUN npm install --omit=dev
+
 EXPOSE 3000
-CMD ["npm", "run", "start"]
+
+CMD ["npm", "start"]

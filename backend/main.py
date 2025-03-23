@@ -13,8 +13,8 @@ from fastapi_socketio import SocketManager
 
 
 from database import Base, engine
-from routers import zalo, messenger, config, training, chat
-#from routers.chat import router as chat_router
+from routers import zalo, messenger, config, training
+from routers.chat import router as chat_router
 from models import MessengerConfig, BotPersona, CrawlConfig
 
 
@@ -305,7 +305,7 @@ async def chat(request: ChatRequest):
 # =======================
 
 
-app.include_router(chat.router)
+app.include_router(chat_router)
 app.include_router(config.router)
 app.include_router(messenger.router)
 app.include_router(zalo.router)

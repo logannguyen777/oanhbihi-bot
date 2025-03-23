@@ -1,63 +1,58 @@
-// frontend/pages/login.js
-import { useState } from "react";
 import { useRouter } from "next/router";
-import Head from "next/head";
-
-const HARDCODED = {
-  username: "admin",
-  password: "oanhbihi",
-};
+import { useState } from "react";
 
 export default function LoginPage() {
-  const [form, setForm] = useState({ username: "", password: "" });
-  const [error, setError] = useState("");
   const router = useRouter();
+  const [formData, setFormData] = useState({ username: "", password: "" });
+  const [error, setError] = useState("");
 
-  const handleLogin = () => {
-    if (
-      form.username === HARDCODED.username &&
-      form.password === HARDCODED.password
-    ) {
-      localStorage.setItem("oanhbihi_token", "dummy-token");
+  const handleChange = (e) =>
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    try {
+      const res = await fetch("http://localhost:8000/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.detail || "Login failed");
+
+      localStorage.setItem("token", data.access_token); // nếu có
       router.push("/dashboard");
-    } else {
-      setError("Sai tài khoản hoặc mật khẩu rồi anh yêu ơi 😢");
+    } catch (err) {
+      setError(err.message);
     }
   };
 
   return (
-    <>
-      <Head>
-        <title>Đăng nhập | Oanh Bihi</title>
-      </Head>
-      <div className="min-h-screen flex items-center justify-center bg-pink-50">
-        <div className="bg-white shadow-lg rounded-xl px-10 py-8 w-full max-w-sm">
-          <h1 className="text-2xl font-bold text-center text-pink-600 mb-6">
-            🧚‍♀️ Oanh Bihi Đăng Nhập
-          </h1>
+    <div className="h-screen flex items-center justify-center bg-gradient-to-br from-purple-100 to-white">
+      <div className="card w-full max-w-md bg-white shadow-xl p-8 space-y-4">
+        <h2 className="text-2xl font-bold text-center text-purple-600">
+          Đăng nhập hệ thống Oanh Bihi 💜
+        </h2>
+        <form className="space-y-4" onSubmit={handleLogin}>
           <input
             type="text"
+            name="username"
             placeholder="Tên đăng nhập"
-            className="w-full p-2 border rounded mb-4"
-            value={form.username}
-            onChange={(e) => setForm({ ...form, username: e.target.value })}
+            className="input input-bordered w-full"
+            onChange={handleChange}
           />
           <input
             type="password"
+            name="password"
             placeholder="Mật khẩu"
-            className="w-full p-2 border rounded mb-4"
-            value={form.password}
-            onChange={(e) => setForm({ ...form, password: e.target.value })}
+            className="input input-bordered w-full"
+            onChange={handleChange}
           />
-          <button
-            onClick={handleLogin}
-            className="bg-pink-500 hover:bg-pink-600 text-white font-medium w-full py-2 rounded"
-          >
-            Đăng nhập
-          </button>
-          {error && <p className="text-red-500 text-sm mt-3 text-center">{error}</p>}
-        </div>
+          {error && <p className="text-red-500 text-sm">{error}</p>}
+          <button className="btn btn-primary w-full">Đăng nhập</button>
+        </form>
       </div>
-    </>
+    </div>
   );
 }
