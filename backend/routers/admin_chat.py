@@ -31,7 +31,7 @@ def get_db():
         db.close()
 
 @router.get("/api/admin/conversations")
-def list_conversations(db: Session = next(get_db())):
+def list_conversations(db: Session = Depends(get_db)):
     users = db.query(User).all()
     data = []
     for user in users:
@@ -57,7 +57,7 @@ def list_conversations(db: Session = next(get_db())):
     return {"users": data}
 
 @router.get("/api/admin/conversations/{user_id}")
-def get_user_conversation(user_id: int, db: Session = next(get_db())):
+def get_user_conversation(user_id: int, db: Session = Depends(get_db)):
     logs = (
         db.query(ChatLog)
         .filter(ChatLog.user_id == user_id)
@@ -84,7 +84,7 @@ def toggle_bot(payload: TogglePayload):
     return {"message": f"Đã cập nhật trạng thái bot cho user {payload.user_id}"}
 
 @router.post("/api/admin/reply")
-def admin_reply(payload: AdminReplyPayload, db: Session = next(get_db())):
+def admin_reply(payload: AdminReplyPayload, db: Session = Depends(get_db)):
     log = ChatLog(
         user_id=payload.user_id,
         role=RoleEnum.admin,

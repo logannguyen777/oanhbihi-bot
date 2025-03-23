@@ -19,7 +19,7 @@ def get_db():
         db.close()
 
 @router.post("/api/auth/login")
-def login(payload: LoginPayload, db: Session = next(get_db())):
+def login(payload: LoginPayload, db: Session = Depends(get_db)):
     user = db.query(AdminUser).filter(AdminUser.username == payload.username).first()
     if not user or not bcrypt.verify(payload.password, user.password_hash):
         raise HTTPException(status_code=401, detail="Đăng nhập thất bại")

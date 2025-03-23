@@ -1,23 +1,19 @@
-# Dockerfile cho Backend
-FROM python:3.10
+# File: backend/Dockerfile
 
-# Thiết lập thư mục làm việc trong container
-WORKDIR /app/backend/
+FROM python:3.10-slim
 
-# Copy file yêu cầu cài đặt thư viện trước
-COPY requirements.txt .
+WORKDIR /app
 
-# Cài đặt các thư viện cần thiết
+# Hệ thống
+RUN apt-get update && apt-get install -y postgresql-client && rm -rf /var/lib/apt/lists/*
+
+# Đặt đúng lại đường dẫn (KHÔNG có 'backend/' phía trước vì đã ở trong thư mục backend rồi)
+COPY requirements.txt ./requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy toàn bộ mã nguồn backend vào container
-COPY . .
+COPY . ./backend
 
-RUN apt-get update && apt-get install -y postgresql-client
+COPY start.sh ./start.sh
+RUN chmod +x ./start.sh
 
-COPY start.sh /app/start.sh
-# Đảm bảo script start.sh có thể chạy
-RUN chmod +x /app/start.sh
-
-# Chạy script start.sh để khởi động server
-CMD ["/bin/bash", "/app/start.sh"]
+CMD ["./start.sh"]

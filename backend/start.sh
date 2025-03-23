@@ -21,4 +21,5 @@ echo "🚀 Chạy training để tạo embeddings..."
 python train_data.py
 
 echo "🚀 Khởi động Backend..."
-uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+# Khởi động server FastAPI bằng Uvicorn
+uvicorn backend.main:app --host 0.0.0.0 --port 8000 --reload

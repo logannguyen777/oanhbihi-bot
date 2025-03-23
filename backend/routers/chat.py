@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from database import SessionLocal
@@ -6,17 +6,17 @@ from models import User, ChatLog, ChannelEnum, RoleEnum
 from datetime import datetime
 import openai
 
-router = APIRouter()
+# ✅ Khởi tạo router
+chat_router = APIRouter(prefix="/api", tags=["Chat"])
 
-# Fake API Key tạm thời (sẽ được cấu hình sau)
-openai.api_key = "YOUR_OPENAI_API_KEY"
-
+# ✅ Request model
 class ChatRequest(BaseModel):
-    sender_id: str  # phone | psid | zalo_id
+    sender_id: str
     channel: ChannelEnum
     message: str
-    session_id: str | None = None  # chỉ cần với web chat
+    session_id: str | None = None
 
+# ✅ DB session
 def get_db():
     db = SessionLocal()
     try:
@@ -24,6 +24,7 @@ def get_db():
     finally:
         db.close()
 
+# ✅ Hàm phụ trợ: tạo hoặc lấy user
 def get_or_create_user(sender_id: str, channel: ChannelEnum, db: Session):
     query_field = {
         ChannelEnum.web: User.phone,
@@ -35,7 +36,6 @@ def get_or_create_user(sender_id: str, channel: ChannelEnum, db: Session):
     if user:
         return user
 
-    # Tạo user mới nếu chưa tồn tại
     user = User()
     if channel == ChannelEnum.web:
         user.phone = sender_id
@@ -49,6 +49,7 @@ def get_or_create_user(sender_id: str, channel: ChannelEnum, db: Session):
     db.refresh(user)
     return user
 
+# ✅ Hàm phụ trợ: lấy context gần nhất
 def get_recent_context(user_id: int, db: Session, limit=5):
     logs = (
         db.query(ChatLog)
@@ -59,33 +60,25 @@ def get_recent_context(user_id: int, db: Session, limit=5):
     )
     return list(reversed(logs))
 
-@router.post("/api/chat")
-def chat_with_context(payload: ChatRequest, db: Session = next(get_db())):
+# ✅ Route chính: /api/chat
+@chat_router.post("/chat")
+def chat_with_context(payload: ChatRequest, db: Session = Depends(get_db)):
     user = get_or_create_user(payload.sender_id, payload.channel, db)
 
-    # Lưu message user
-    user_msg = ChatLog(
+    db.add(ChatLog(
         user_id=user.id,
         session_id=payload.session_id,
         channel=payload.channel,
         role=RoleEnum.user,
         message=payload.message,
         timestamp=datetime.utcnow(),
-    )
-    db.add(user_msg)
+    ))
     db.commit()
 
-    # Lấy context
     context_logs = get_recent_context(user.id, db)
-    messages = []
-    for log in context_logs:
-        messages.append({
-            "role": log.role.value,
-            "content": log.message
-        })
+    messages = [{"role": log.role.value, "content": log.message} for log in context_logs]
     messages.append({"role": "user", "content": payload.message})
 
-    # Gọi OpenAI
     try:
         response = openai.ChatCompletion.create(
             model="gpt-3.5-turbo",
@@ -95,16 +88,17 @@ def chat_with_context(payload: ChatRequest, db: Session = next(get_db())):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-    # Lưu message bot
-    bot_log = ChatLog(
+    db.add(ChatLog(
         user_id=user.id,
         session_id=payload.session_id,
         channel=payload.channel,
         role=RoleEnum.bot,
         message=bot_reply,
         timestamp=datetime.utcnow(),
-    )
-    db.add(bot_log)
+    ))
     db.commit()
 
     return {"reply": bot_reply}
+
+# ✅ Export đúng router
+router = chat_router
