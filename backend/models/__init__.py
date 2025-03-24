@@ -8,3 +8,5 @@ from .chat_log import ChatLog
 from .enum import ChannelEnum, RoleEnum
 from .config_model import AppConfig
 from .web_page import WebPage
+from .document import Document
+from .document_chunk import DocumentChunk

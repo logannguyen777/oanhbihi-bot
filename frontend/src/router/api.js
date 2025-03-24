@@ -1,5 +1,3 @@
-// src/router/api.js
-
 import axios from 'axios'
 
 // Khởi tạo axios instance chung
@@ -16,8 +14,22 @@ api.interceptors.request.use((config) => {
   return config
 })
 
-// Các hàm API dùng chung instance `api`
+// Các hàm gọi API chuẩn hóa
 export const getAllConfigs = () => api.get('/api/config')
 export const setConfig = (key, value) => api.post('/api/config', null, { params: { key, value } })
+
+export const uploadTrainingFiles = (formData) =>
+  api.post('/api/train/upload', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  })
+
+export const startTraining = (model) =>
+  api.post('/api/train/start', { model })
+
+export const getTrainedDocs = () =>
+  api.get('/api/train/docs')
+
+export const crawlUrl = (url) =>
+  api.post('/api/crawl', { url })
 
 export default api
