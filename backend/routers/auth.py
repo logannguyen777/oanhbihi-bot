@@ -4,6 +4,8 @@ from sqlalchemy.orm import Session
 from database import SessionLocal
 from models import AdminUser
 from passlib.hash import bcrypt
+from services.auth_service import authenticate_user, create_admin_user
+
 
 router = APIRouter()
 

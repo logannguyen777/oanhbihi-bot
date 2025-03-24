@@ -1,84 +1,31 @@
-from fastapi import APIRouter, Depends
-from pydantic import BaseModel
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
-from database import SessionLocal
-from models import MessengerConfig as MessengerModel
-from models import BotPersona, CrawlConfig
+from database import get_db
+from models import config_model
+from services.config_service import get_config, set_config
 
+router = APIRouter(prefix="/api/config", tags=["config"])
 
-router = APIRouter()
+@router.get("")
+def get_config_api(
+    key: str = Query(None),
+    db: Session = Depends(get_db)
+):
+    if key:
+        value = get_config(db, key)
+        if value is None:
+            raise HTTPException(status_code=404, detail="Config not found")
+        return {"key": key, "value": value}
+    return get_all_configs(db)
 
-class MessengerConfig(BaseModel):
-    pageToken: str
-    verifyToken: str
-
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
-
-@router.post("/api/config/messenger")
-def save_messenger_config(config: MessengerConfig, db: Session = Depends(get_db)):
-    existing = db.query(MessengerModel).first()
-    if existing:
-        existing.page_token = config.pageToken
-        existing.verify_token = config.verifyToken
-    else:
-        new_config = MessengerModel(
-            page_token=config.pageToken,
-            verify_token=config.verifyToken
-        )
-        db.add(new_config)
-    db.commit()
-    return {"message": "Đã lưu cấu hình Messenger vào DB!"}
-
-
-# ---------- CẤU HÌNH BOT PERSONA ----------
-class PersonaConfig(BaseModel):
-    name: str
-    age: str
-    gender: str
-    tone: str
-    greeting: str
-    style: str
-
-@router.post("/api/config/persona")
-def save_bot_persona(config: PersonaConfig, db: Session = Depends(get_db)):
-    existing = db.query(BotPersona).first()
-    if existing:
-        for field, value in config.dict().items():
-            setattr(existing, field, value)
-    else:
-        new_config = BotPersona(**config.dict())
-        db.add(new_config)
-    db.commit()
-    return {"message": "Đã lưu cấu hình Bot & Persona vào DB!"}
-
-# ---------- CẤU HÌNH CRAWL ----------
-from typing import List
-import json
-from models import CrawlConfig as CrawlModel
-
-class CrawlConfigRequest(BaseModel):
-    urls: List[str]
-    fileTypes: List[str]
-    schedule: str
-
-@router.post("/api/config/crawl")
-def save_crawl_config(config: CrawlConfigRequest, db: Session = Depends(get_db)):
-    existing = db.query(CrawlModel).first()
-    if existing:
-        existing.urls = json.dumps(config.urls)
-        existing.file_types = json.dumps(config.fileTypes)
-        existing.schedule = config.schedule
-    else:
-        new_config = CrawlModel(
-            urls=json.dumps(config.urls),
-            file_types=json.dumps(config.fileTypes),
-            schedule=config.schedule
-        )
-        db.add(new_config)
-    db.commit()
-    return {"message": "Đã lưu cấu hình crawl vào DB!"}
+@router.post("")
+def set_config_api(
+    body: dict,
+    db: Session = Depends(get_db)
+):
+    key = body.get("key")
+    value = body.get("value")
+    if not key or value is None:
+        raise HTTPException(status_code=400, detail="Key and value are required")
+    set_config(db, key, value)
+    return {"message": f"✅ Đã cập nhật cấu hình `{key}` thành công!"}

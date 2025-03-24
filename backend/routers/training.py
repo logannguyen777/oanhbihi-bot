@@ -4,6 +4,7 @@ import os
 import shutil
 import subprocess
 import openai
+from services.training_service import trigger_training_pipeline
 
 
 router = APIRouter()
