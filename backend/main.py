@@ -17,6 +17,7 @@ from routers import zalo, messenger, config, training, auth
 from routers.admin_chat import get_admin_chat_router
 from routers.chat import router as chat_router
 from models import MessengerConfig, BotPersona, CrawlConfig
+from db.init_db import init_db
 
 
 app = FastAPI()
@@ -33,6 +34,11 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+@app.on_event("startup")
+def on_startup():
+    init_db()  # Tự động tạo bảng khi app start
 
 # =======================
 # 🚀 CẤU HÌNH OPENAI

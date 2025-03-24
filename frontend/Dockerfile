@@ -8,15 +8,15 @@ RUN npm install
 COPY . .
 RUN npm run build
 
-# Stage 2: Run
-FROM node:18-alpine
+# Stage 2: Serve static with nginx
+FROM nginx:stable-alpine
 
-ENV NODE_ENV=production
-WORKDIR /app
+# Copy build files
+COPY --from=builder /app/dist /usr/share/nginx/html
 
-COPY --from=builder /app ./
-RUN npm install --omit=dev
+# Copy custom nginx config (optional)
+COPY nginx.conf /etc/nginx/conf.d/default.conf
 
 EXPOSE 3000
 
-CMD ["npm", "start"]
+CMD ["nginx", "-g", "daemon off;"]

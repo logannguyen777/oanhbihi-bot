@@ -13,3 +13,4 @@ python-multipart
 python-socketio
 fastapi-socketio
 passlib[bcrypt]
+bcrypt==4.0.1

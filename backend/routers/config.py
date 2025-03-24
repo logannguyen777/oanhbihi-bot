@@ -3,6 +3,8 @@ from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from database import SessionLocal
 from models import MessengerConfig as MessengerModel
+from models import BotPersona, CrawlConfig
+
 
 router = APIRouter()
 

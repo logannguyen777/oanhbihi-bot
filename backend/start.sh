@@ -20,6 +20,22 @@ echo "✅ Extension vector đã được cài đặt!"
 #echo "🚀 Chạy training để tạo embeddings..."
 #python train_data.py
 
+echo "🔹 Cấp quyền thư mục Alembic..."
+chmod -R 777 /app/alembic
+chmod -R 777 /app/alembic/versions
+echo "✅ Đã cấp quyền ghi cho thư mục alembic."
+
+echo "✅ Autogenerate Alembic revision..."
+alembic revision --autogenerate -m "auto migrate" || echo "❌ Alembic autogenerate fail"
+
+echo "✅ Alembic upgrade..."
+alembic upgrade head || echo "❌ Alembic upgrade fail"
+
+echo "🚀 Tạo Admin..."
+python init_superadmin.py || echo "❌ Không tạo được admin!"
+
+
+
 echo "🚀 Khởi động Backend..."
 # Khởi động server FastAPI bằng Uvicorn
 uvicorn main:app --host 0.0.0.0 --port 8000 --reload
