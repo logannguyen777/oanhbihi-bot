@@ -7,6 +7,8 @@ from routers.admin_chat import get_admin_chat_router
 from routers.chat import router as chat_router
 from rag.pipeline import init_rag_pipeline, chat_endpoint, chat_history_endpoint
 from services.socket import init_socket, sio
+from routers import logs_ws
+
 
 app = FastAPI()
 
@@ -43,6 +45,7 @@ app.include_router(auth.router)
 app.include_router(persona.router)
 app.include_router(crawl.router)
 app.include_router(get_admin_chat_router(sio))
+app.include_router(logs_ws.router)
 
 # Đăng ký endpoint xử lý RAG
 app.post("/chat")(chat_endpoint)

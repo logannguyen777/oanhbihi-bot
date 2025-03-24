@@ -6,5 +6,5 @@ from .admin_user import AdminUser
 from .user import User
 from .chat_log import ChatLog
 from .enum import ChannelEnum, RoleEnum
-from .config_model import Config
-
+from .config_model import AppConfig
+from .web_page import WebPage

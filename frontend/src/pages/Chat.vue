@@ -44,7 +44,7 @@
     try {
       let res
       if (mode.value === 'rag') {
-        res = await api.post('/chat', { input_text: message.value })
+        res = await api.post('/api/chat', { input_text: message.value })
       } else {
         res = await api.post('/api/chat', {
           sender_id: 'admin',

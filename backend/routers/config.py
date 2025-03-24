@@ -1,31 +1,29 @@
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from database import get_db
-from models import config_model
-from services.config_service import get_config, set_config
+from services import config_service
 
-router = APIRouter(prefix="/api/config", tags=["config"])
+router = APIRouter(prefix="/api/config", tags=["Config"])
 
-@router.get("")
-def get_config_api(
-    key: str = Query(None),
-    db: Session = Depends(get_db)
-):
-    if key:
-        value = get_config(db, key)
-        if value is None:
-            raise HTTPException(status_code=404, detail="Config not found")
-        return {"key": key, "value": value}
-    return get_all_configs(db)
+@router.get("/{key}", response_model=str)
+def get_config_value(key: str, db: Session = Depends(get_db)):
+    value = config_service.get_config(db, key)
+    if value is None:
+        raise HTTPException(status_code=404, detail="Config not found")
+    return value
 
-@router.post("")
-def set_config_api(
-    body: dict,
-    db: Session = Depends(get_db)
-):
-    key = body.get("key")
-    value = body.get("value")
-    if not key or value is None:
-        raise HTTPException(status_code=400, detail="Key and value are required")
-    set_config(db, key, value)
-    return {"message": f"✅ Đã cập nhật cấu hình `{key}` thành công!"}
+@router.post("/")
+def set_config_value(key: str, value: str, db: Session = Depends(get_db)):
+    config_service.set_config(db, key, value)
+    return {"message": "Config saved successfully"}
+
+@router.get("/", response_model=dict)
+def get_all_configs(db: Session = Depends(get_db)):
+    return config_service.get_all_configs(db)
+
+@router.delete("/{key}")
+def delete_config_value(key: str, db: Session = Depends(get_db)):
+    success = config_service.delete_config(db, key)
+    if not success:
+        raise HTTPException(status_code=404, detail="Config not found")
+    return {"message": "Config deleted successfully"}

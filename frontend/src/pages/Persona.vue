@@ -59,7 +59,7 @@ const form = ref({
 })
 
 const loadPersonas = async () => {
-  const res = await axios.get('/persona')
+  const res = await axios.get('/api/persona')
   personas.value = res.data
 }
 

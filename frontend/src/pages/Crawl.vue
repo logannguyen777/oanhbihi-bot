@@ -61,7 +61,7 @@ const showModal = ref(false)
 const form = ref({ url: '', selector: '', label: '' })
 
 const loadCrawls = async () => {
-  const res = await axios.get('/crawl')
+  const res = await axios.get('/api/crawl')
   crawls.value = res.data
 }
 

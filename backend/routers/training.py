@@ -1,14 +1,19 @@
-from fastapi import APIRouter, UploadFile, File
+from fastapi import APIRouter, UploadFile, File, Depends
 from fastapi.responses import JSONResponse
+from sqlalchemy.orm import Session
 import os
 import shutil
 import subprocess
 import openai
 from services.training_service import trigger_training_pipeline
-
+from database import get_db
+from models.web_page import WebPage
 
 router = APIRouter()
 UPLOAD_FOLDER = "downloads"
+
+
+
 
 @router.post("/api/train/upload")
 async def upload_files(files: list[UploadFile] = File(...)):
@@ -34,3 +39,8 @@ def start_training():
         return {"message": "⏱️ Quá thời gian khi train bot!"}
     except Exception as e:
         return {"message": f"Lỗi: {e}"}
+    
+@router.get("/web-pages")
+def get_web_pages(db: Session = Depends(get_db)):
+    pages = db.query(WebPage).order_by(WebPage.id.desc()).limit(100).all()
+    return [{"id": p.id, "url": p.url, "content": p.content} for p in pages]

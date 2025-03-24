@@ -43,7 +43,7 @@ import { toast } from 'vue3-toastify'
 const pages = ref([])
 
 const fetchData = async () => {
-  const res = await axios.get('/training/web-pages')
+  const res = await axios.get('/api/training/web-pages')
   pages.value = res.data
 }
 

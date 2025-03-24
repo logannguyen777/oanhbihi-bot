@@ -39,12 +39,20 @@
       </div>
     </div>
   </div>
+
+  <div class="space-y-6">
+    <h2 class="text-xl font-bold text-orange-500">🧾 Log hệ thống (Realtime)</h2>
+    <LogConsole :logs="logs" />
+  </div>
+
 </template>
 
 <script setup>
 import { ref, onMounted } from 'vue'
 import axios from '../router/api'
 import { io } from 'socket.io-client'
+import { ref, onMounted, onUnmounted } from 'vue'
+import LogConsole from '@/components/ui/LogConsole.vue'
 
 const stats = ref({
   personas: 0,
@@ -59,10 +67,10 @@ const socket_status = ref(false)
 const fetchStats = async () => {
   try {
     const [p, c, w, o] = await Promise.all([
-      axios.get('/persona'),
-      axios.get('/crawl'),
-      axios.get('/training/web-pages'),
-      axios.get('/config?key=openai_key')
+      axios.get('/api/persona'),
+      axios.get('/api/crawl'),
+      axios.get('/api/training/web-pages'),
+      axios.get('/api/config?key=openai_key')
     ])
     stats.value.personas = p.data.length
     stats.value.crawls = c.data.length
@@ -89,4 +97,39 @@ onMounted(() => {
   fetchStats()
   checkSocket()
 })
+
+
+const logs = ref([])
+let socket = null
+
+const connectLogsSocket = () => {
+  socket = new WebSocket('ws://localhost:8000/ws/logs') // 👈 đổi nếu dùng domain hoặc port khác
+
+  socket.onmessage = (event) => {
+    logs.value.push(event.data)
+  }
+
+  socket.onopen = () => {
+    logs.value.push('[📡] Đã kết nối WebSocket')
+  }
+
+  socket.onclose = () => {
+    logs.value.push('[❌] Mất kết nối WebSocket')
+  }
+
+  socket.onerror = () => {
+    logs.value.push('[⚠️] WebSocket lỗi kết nối')
+  }
+}
+
+onMounted(() => {
+  connectLogsSocket()
+})
+
+onUnmounted(() => {
+  socket?.close()
+})
+
+
+
 </script>
