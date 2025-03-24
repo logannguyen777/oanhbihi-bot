@@ -1,11 +1,11 @@
 import os
 from sqlalchemy.orm import Session
-from backend.database import SessionLocal
-from backend.models.web_page import WebPage
-from backend.models.document import Document
-from backend.models.document_chunk import DocumentChunk
-from backend.services.utils.embedding import get_embedding
-from backend.routers.logs_ws import broadcast_log
+from database import SessionLocal
+from models.web_page import WebPage
+from models.document import Document
+from models.document_chunk import DocumentChunk
+from services.utils.embedding import generate_embedding
+from routers.logs_ws import broadcast_log
 
 TEXT_FILE_TYPES = [".txt", ".md"]
 PDF_FILE_TYPES = [".pdf"]
@@ -42,7 +42,7 @@ async def train_from_web_pages():
             db.add(doc)
             db.flush()
             for chunk in chunks:
-                emb = get_embedding(chunk)
+                emb = generate_embedding(chunk)
                 doc_chunk = DocumentChunk(content=chunk, embedding=emb, document_id=doc.id)
                 db.add(doc_chunk)
         db.commit()
@@ -84,7 +84,7 @@ async def train_from_uploaded_files():
             db.add(doc)
             db.flush()
             for chunk in chunks:
-                emb = get_embedding(chunk)
+                emb = generate_embedding(chunk)
                 doc_chunk = DocumentChunk(content=chunk, embedding=emb, document_id=doc.id)
                 db.add(doc_chunk)
         db.commit()

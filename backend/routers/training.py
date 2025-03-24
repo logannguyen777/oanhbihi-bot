@@ -5,11 +5,11 @@ import os
 import shutil
 import subprocess
 import openai
-from services.training_service import trigger_training_pipeline
+#from services.training_service import trigger_training_pipeline
 from database import get_db
 from models.web_page import WebPage
 
-router = APIRouter()
+router = APIRouter(prefix="/api/training", tags=["Training"])
 UPLOAD_FOLDER = "downloads"
 
 

@@ -2,6 +2,8 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from database import get_db
 from services import config_service
+from services.config_service import get_all_configs
+
 
 router = APIRouter(prefix="/api/config", tags=["Config"])
 
@@ -19,7 +21,7 @@ def set_config_value(key: str, value: str, db: Session = Depends(get_db)):
 
 @router.get("/", response_model=dict)
 def get_all_configs(db: Session = Depends(get_db)):
-    return config_service.get_all_configs(db)
+    return config_service.get_all_configs(db) 
 
 @router.delete("/{key}")
 def delete_config_value(key: str, db: Session = Depends(get_db)):

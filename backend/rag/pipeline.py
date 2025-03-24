@@ -11,6 +11,7 @@ import requests
 from sqlalchemy.orm import Session
 from models import CrawlConfig
 from database import get_db
+from routers.logs_ws import broadcast_log
 
 # ============================
 # 🚀 Khởi tạo pipeline RAG
@@ -29,7 +30,7 @@ conn = None
 cursor = None
 BOT_PERSONA = ""
 
-def init_rag_pipeline(sio=None):
+async def init_rag_pipeline():
     global client, conn, cursor, BOT_PERSONA
 
     try:
@@ -44,16 +45,13 @@ def init_rag_pipeline(sio=None):
         if api_key:
             client = OpenAI(api_key=api_key)
             print("✅ OpenAI API Key hợp lệ")
-            if sio:
-                sio.emit("log", "✅ OpenAI API Key hợp lệ")
+            await broadcast_log("✅ OpenAI API Key hợp lệ")  # ✅ thay sio.emit
         else:
             print("⚠️ Không tìm thấy OpenAI API Key!")
-            if sio:
-                sio.emit("log", "⚠️ Không tìm thấy OpenAI API Key!")
+            await broadcast_log("⚠️ Không tìm thấy OpenAI API Key!")
     except Exception as e:
         print(f"⚠️ Lỗi OpenAI: {e}")
-        if sio:
-            sio.emit("log", f"⚠️ Lỗi OpenAI: {e}")
+        await broadcast_log(f"⚠️ Lỗi OpenAI: {e}")
 
     # Kết nối DB
     try:
@@ -62,31 +60,15 @@ def init_rag_pipeline(sio=None):
         register_vector(conn)
 
         cursor.execute("CREATE EXTENSION IF NOT EXISTS vector;")
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS web_pages (
-                id SERIAL PRIMARY KEY,
-                url TEXT UNIQUE NOT NULL,
-                title TEXT,
-                content TEXT,
-                file_path TEXT,
-                last_crawled TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                embedding vector(1536)
-            );
-        """)
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS chat_logs (
-                id SERIAL PRIMARY KEY,
-                user_message TEXT,
-                bot_response TEXT,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            );
-        """)
+        cursor.execute("""CREATE TABLE IF NOT EXISTS web_pages (...);""")
+        cursor.execute("""CREATE TABLE IF NOT EXISTS chat_logs (...);""")
         conn.commit()
 
         crawl_data()
         train_data()
     except Exception as e:
         print(f"⚠️ Lỗi DB pipeline: {e}")
+        await broadcast_log(f"⚠️ Lỗi DB pipeline: {e}")
 
 # ============================
 # 🔍 Crawl dữ liệu

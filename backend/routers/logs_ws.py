@@ -1,4 +1,5 @@
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
+from fastapi.middleware.cors import CORSMiddleware
 
 router = APIRouter()
 active_connections: list[WebSocket] = []
@@ -17,5 +18,12 @@ async def broadcast_log(message: str):
     for conn in active_connections:
         try:
             await conn.send_text(message)
+        except:
+            continue
+
+async def broadcast_chat_update():
+    for conn in active_connections:
+        try:
+            await conn.send_text("__chat_update__")  # frontend nhận biết event đặc biệt
         except:
             continue

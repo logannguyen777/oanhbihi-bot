@@ -4,7 +4,7 @@
       ⚙️ Cấu hình hệ thống
     </h2>
 
-    <!-- 1. MESSENGER CONFIG -->
+    <!-- MESSENGER -->
     <SectionCard title="📩 Cấu hình Messenger">
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <input v-model="messenger.pageToken" placeholder="Page Token" class="input input-bordered w-full" />
@@ -13,7 +13,7 @@
       <SaveButton @click="saveMessenger" :loading="loading" />
     </SectionCard>
 
-    <!-- 2. PERSONA CONFIG -->
+    <!-- PERSONA -->
     <SectionCard title="🧍‍♀️ Cấu hình Persona (Bot Oanh Bihi)">
       <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
         <input v-model="persona.name" placeholder="Tên Bot" class="input input-bordered w-full" />
@@ -26,14 +26,9 @@
       <SaveButton @click="savePersona" :loading="loading" />
     </SectionCard>
 
-    <!-- 3. CRAWL CONFIG -->
+    <!-- CRAWL -->
     <SectionCard title="🌐 Cấu hình Crawl dữ liệu">
-      <textarea
-        v-model="crawl.urls"
-        placeholder="Danh sách URL (mỗi dòng 1 URL)"
-        class="textarea textarea-bordered w-full"
-        rows="4"
-      ></textarea>
+      <textarea v-model="crawl.urls" placeholder="Danh sách URL (mỗi dòng 1 URL)" class="textarea textarea-bordered w-full" rows="4"></textarea>
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
         <input v-model="crawl.fileTypes" placeholder="File Types (vd: pdf,docx)" class="input input-bordered w-full" />
         <input v-model="crawl.schedule" placeholder="Schedule (vd: daily, weekly)" class="input input-bordered w-full" />
@@ -41,7 +36,7 @@
       <SaveButton @click="saveCrawl" :loading="loading" />
     </SectionCard>
 
-    <!-- 4. DYNAMIC CONFIG -->
+    <!-- DYNAMIC CONFIG -->
     <SectionCard title="🔧 Cấu hình chung từ hệ thống (AppConfig)">
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div v-for="(value, key) in dynamicConfig" :key="key" class="form-control">
@@ -57,17 +52,14 @@
     <h2 class="text-xl font-bold text-orange-500">🧾 Log hệ thống (Realtime)</h2>
     <LogConsole :logs="logs" />
   </div>
-
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
-import api from '@/router/api'
-import SectionCard from '@/components/ui/SectionCard.vue'
-import SaveButton from '@/components/ui/SaveButton.vue'
 import { ref, onMounted, onUnmounted } from 'vue'
-import LogConsole from '@/components/ui/LogConsole.vue'
-
+import { getAllConfigs, setConfigByKey, saveSectionConfig } from '@/router/api'
+import SectionCard from '@/components/SectionCard.vue'
+import SaveButton from '@/components/SaveButton.vue'
+import LogConsole from '@/components/LogConsole.vue'
 
 const loading = ref(false)
 
@@ -76,14 +68,16 @@ const persona = ref({ name: '', age: '', gender: '', tone: '', greeting: '', sty
 const crawl = ref({ urls: '', fileTypes: '', schedule: '' })
 const dynamicConfig = ref({})
 
-onMounted(async () => {
+const toast = (msg, type) => window.$toast?.showToast?.(msg, type)
+
+const fetchConfigs = async () => {
   try {
-    const res = await api.get('/api/config')
+    const res = await getAllConfigs()
     dynamicConfig.value = res.data
   } catch (e) {
-    toast('❌ Lỗi tải cấu hình động', 'error')
+    toast('❌ Lỗi tải cấu hình hệ thống', 'error')
   }
-})
+}
 
 const saveMessenger = async () => {
   await saveSection('/api/config/messenger', messenger.value, 'Messenger')
@@ -95,7 +89,7 @@ const savePersona = async () => {
 
 const saveCrawl = async () => {
   const payload = {
-    urls: crawl.value.urls.split('\n').filter(Boolean),
+    urls: crawl.value.urls.split('\\n').filter(Boolean),
     fileTypes: crawl.value.fileTypes.split(',').map(x => x.trim()),
     schedule: crawl.value.schedule,
   }
@@ -103,16 +97,23 @@ const saveCrawl = async () => {
 }
 
 const saveDynamicConfig = async () => {
-  for (const key in dynamicConfig.value) {
-    await api.post('/api/config', null, { params: { key, value: dynamicConfig.value[key] } })
+  loading.value = true
+  try {
+    for (const key in dynamicConfig.value) {
+      await setConfigByKey(key, dynamicConfig.value[key])
+    }
+    toast('✅ Đã lưu cấu hình hệ thống!', 'success')
+  } catch {
+    toast('❌ Lỗi khi lưu cấu hình động!', 'error')
+  } finally {
+    loading.value = false
   }
-  toast('✅ Đã lưu cấu hình hệ thống!', 'success')
 }
 
 const saveSection = async (url, data, label) => {
   loading.value = true
   try {
-    await api.post(url, data)
+    await saveSectionConfig(url, data)
     toast(`✅ Lưu ${label} thành công!`, 'success')
   } catch {
     toast(`❌ Lỗi khi lưu ${label}!`, 'error')
@@ -121,40 +122,21 @@ const saveSection = async (url, data, label) => {
   }
 }
 
-const toast = (msg, type) => {
-  window.$toast?.showToast?.(msg, type)
-}
-
-
 const logs = ref([])
 let socket = null
-
 const connectLogsSocket = () => {
-  socket = new WebSocket('ws://localhost:8000/ws/logs') // 👈 đổi nếu dùng domain hoặc port khác
-
-  socket.onmessage = (event) => {
-    logs.value.push(event.data)
-  }
-
-  socket.onopen = () => {
-    logs.value.push('[📡] Đã kết nối WebSocket')
-  }
-
-  socket.onclose = () => {
-    logs.value.push('[❌] Mất kết nối WebSocket')
-  }
-
-  socket.onerror = () => {
-    logs.value.push('[⚠️] WebSocket lỗi kết nối')
-  }
+  socket = new WebSocket(import.meta.env.VITE_BACKEND_WS || 'ws://localhost:8000/ws/logs')
+  socket.onmessage = (event) => logs.value.push(event.data)
+  socket.onopen = () => logs.value.push('[📡] Đã kết nối WebSocket')
+  socket.onclose = () => logs.value.push('[❌] Mất kết nối WebSocket')
+  socket.onerror = () => logs.value.push('[⚠️] WebSocket lỗi kết nối')
 }
 
 onMounted(() => {
+  fetchConfigs()
   connectLogsSocket()
 })
-
 onUnmounted(() => {
   socket?.close()
 })
-
 </script>

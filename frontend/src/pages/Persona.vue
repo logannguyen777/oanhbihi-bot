@@ -7,7 +7,7 @@
     </div>
 
     <div class="grid md:grid-cols-2 gap-4">
-      <div v-for="p in personas" :key="p.name" class="bg-white rounded shadow p-4">
+      <div v-for="p in personas" :key="p.id" class="bg-white rounded shadow p-4">
         <div class="font-bold">{{ p.name }} ({{ p.age }} tuổi)</div>
         <div class="italic text-sm text-gray-500 mb-2">{{ p.style }}</div>
         <div class="text-sm whitespace-pre-line border p-2 rounded bg-gray-50">{{ p.prompt }}</div>
@@ -37,7 +37,7 @@
         </div>
         <div class="modal-action">
           <button class="btn" @click="showModal = false">Huỷ</button>
-          <button class="btn btn-primary" @click="createPersona">Lưu</button>
+          <button class="btn btn-primary" @click="createPersona" :disabled="loading">Lưu</button>
         </div>
       </div>
     </dialog>
@@ -46,10 +46,11 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
-import axios from '../router/api'
+import { listPersonas, createPersona, deletePersona as apiDeletePersona } from '@/router/api'
 
 const personas = ref([])
 const showModal = ref(false)
+const loading = ref(false)
 
 const form = ref({
   name: '',
@@ -58,21 +59,46 @@ const form = ref({
   prompt: ''
 })
 
-const loadPersonas = async () => {
-  const res = await axios.get('/api/persona')
-  personas.value = res.data
+const toast = (msg, type = 'success') => {
+  window.$toast?.showToast?.(msg, type)
 }
 
-const createPersona = async () => {
-  await axios.post('/persona', form.value)
-  showModal.value = false
-  await loadPersonas()
+const loadPersonas = async () => {
+  try {
+    const res = await listPersonas()
+    personas.value = res.data
+  } catch {
+    toast('❌ Lỗi tải danh sách personas', 'error')
+  }
+}
+
+const createPersonaHandler = async () => {
+  loading.value = true
+  try {
+    await createPersona(form.value)
+    toast('✅ Đã thêm Persona!')
+    showModal.value = false
+    await loadPersonas()
+  } catch {
+    toast('❌ Lỗi khi tạo persona', 'error')
+  } finally {
+    loading.value = false
+  }
 }
 
 const deletePersona = async (p) => {
-  await axios.delete('/persona/' + p.id)
-  await loadPersonas()
+  try {
+    await apiDeletePersona(p.id)
+    toast('🗑️ Đã xoá persona')
+    await loadPersonas()
+  } catch {
+    toast('❌ Lỗi khi xoá persona', 'error')
+  }
 }
 
-onMounted(loadPersonas)
+onMounted(() => {
+  loadPersonas()
+})
+
+const createPersona = createPersonaHandler
 </script>

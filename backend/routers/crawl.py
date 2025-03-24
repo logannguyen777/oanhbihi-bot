@@ -11,7 +11,8 @@ from services.config_service import set_config
 from pgvector.psycopg2 import register_vector
 from fastapi_socketio import SocketManager
 from services.crawl_service import get_crawl_config, update_crawl_config
-from services.socket import sio
+from routers.logs_ws import broadcast_log
+
 
 router = APIRouter(prefix="/api/crawl", tags=["crawl"])
 
@@ -41,7 +42,7 @@ def delete_crawl(id: int, db: Session = Depends(get_db)):
     return {"message": "🗑️ Đã xoá config crawl"}
 
 @router.post("/run")
-def run_crawl_all(db: Session = Depends(get_db)):
+async def run_crawl_all(db: Session = Depends(get_db)):
     configs = db.query(CrawlConfig).all()
     count = 0
     for conf in configs:
@@ -62,7 +63,7 @@ def run_crawl_all(db: Session = Depends(get_db)):
                 """, (url, content))
                 count += 1
             conn.commit()
-            sio.emit("log", f"🌐 Crawled {conf.label or conf.url} - Thêm {count} bản ghi.")
+            await broadcast_log(f"🌐 Crawled {conf.label or conf.url} - Thêm {count} bản ghi.")
         except Exception as e:
-            sio.emit("log", f"⚠️ Lỗi crawl {conf.url}: {e}")
+            await broadcast_log(f"⚠️ Lỗi crawl {conf.url}: {e}")
     return {"message": f"✅ Đã crawl {len(configs)} config, thêm {count} bản ghi."}

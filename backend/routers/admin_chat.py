@@ -1,4 +1,3 @@
-# backend/routers/admin_chat.py
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
@@ -6,8 +5,9 @@ from database import SessionLocal
 from models import User, ChatLog, RoleEnum
 from datetime import datetime
 
-# Giả lập bộ nhớ trạng thái bot
-bot_control = {}  # key: user_id, value: {bot_enabled: bool, handled_by_admin: None}
+from routers.logs_ws import broadcast_chat_update  # ✅ dùng WebSocket thay vì socketio
+
+bot_control = {}
 
 class TogglePayload(BaseModel):
     user_id: int
@@ -26,7 +26,7 @@ def get_db():
     finally:
         db.close()
 
-def get_admin_chat_router(sio):
+def get_admin_chat_router():
     router = APIRouter()
 
     @router.get("/api/admin/conversations")
@@ -75,15 +75,15 @@ def get_admin_chat_router(sio):
         return {"user_id": user_id, "conversation": conversation}
 
     @router.post("/api/admin/toggle-bot")
-    def toggle_bot(payload: TogglePayload):
+    async def toggle_bot(payload: TogglePayload):
         status = bot_control.get(payload.user_id, {"bot_enabled": True})
         status["bot_enabled"] = not status["bot_enabled"]
         bot_control[payload.user_id] = status
-        sio.emit("chat_update")  # 🔥 Realtime push update
+        await broadcast_chat_update()  # ✅ emit bằng WebSocket
         return {"message": f"Đã cập nhật trạng thái bot cho user {payload.user_id}"}
 
     @router.post("/api/admin/reply")
-    def admin_reply(payload: AdminReplyPayload, db: Session = Depends(get_db)):
+    async def admin_reply(payload: AdminReplyPayload, db: Session = Depends(get_db)):
         log = ChatLog(
             user_id=payload.user_id,
             role=RoleEnum.admin,
@@ -93,7 +93,7 @@ def get_admin_chat_router(sio):
         )
         db.add(log)
         db.commit()
-        sio.emit("chat_update")  # 🔥 Realtime push update khi admin gửi phản hồi
+        await broadcast_chat_update()  # ✅ emit bằng WebSocket
         return {"message": "Đã lưu phản hồi từ admin"}
 
     return router

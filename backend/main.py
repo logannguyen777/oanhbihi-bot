@@ -1,4 +1,4 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, WebSocket
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi_socketio import SocketManager
 from database import Base, engine
@@ -6,13 +6,10 @@ from db.init_db import init_db
 from routers.admin_chat import get_admin_chat_router
 from routers.chat import router as chat_router
 from rag.pipeline import init_rag_pipeline, chat_endpoint, chat_history_endpoint
-from services.socket import init_socket, sio
 from routers import logs_ws
 
 
 app = FastAPI()
-
-init_socket(app)
 
 from routers import zalo, messenger, config, training, auth, persona, crawl
 
@@ -44,7 +41,7 @@ app.include_router(training.router)
 app.include_router(auth.router)
 app.include_router(persona.router)
 app.include_router(crawl.router)
-app.include_router(get_admin_chat_router(sio))
+app.include_router(get_admin_chat_router())
 app.include_router(logs_ws.router)
 
 # Đăng ký endpoint xử lý RAG
