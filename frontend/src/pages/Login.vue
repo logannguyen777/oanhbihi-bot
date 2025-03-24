@@ -19,6 +19,8 @@
   import { ref } from 'vue'
   import { useRouter } from 'vue-router'
   import api from '@/router/api'
+  // Nếu dùng vue-sonner thì import:
+  // import { toast } from 'vue-sonner'
   
   const username = ref('')
   const password = ref('')
@@ -32,15 +34,19 @@
         username: username.value,
         password: password.value,
       })
-      if (res.status === 200) {
-        localStorage.setItem('token', 'mock-token') // Gắn token tạm
-        window.$toast.showToast('✅ Đăng nhập thành công!', 'success')
-        router.push('/dashboard')
+  
+      if (res.status === 200 && res.data.token) {
+        localStorage.setItem('token', res.data.token) // ✅ Lưu token thật
+        // toast.success('✅ Đăng nhập thành công!')
+        window.$toast?.showToast?.('✅ Đăng nhập thành công!', 'success') // fallback
+        router.push('/dashboard') // ✅ Chuyển trang
       } else {
-        window.$toast.showToast('❌ Đăng nhập thất bại', 'error')
+        // toast.error('❌ Đăng nhập thất bại')
+        window.$toast?.showToast?.('❌ Đăng nhập thất bại', 'error')
       }
     } catch (err) {
-      window.$toast.showToast('❌ Sai tên đăng nhập hoặc mật khẩu', 'error')
+      // toast.error('❌ Sai tên đăng nhập hoặc mật khẩu')
+      window.$toast?.showToast?.('❌ Sai tên đăng nhập hoặc mật khẩu', 'error')
     } finally {
       loading.value = false
     }
