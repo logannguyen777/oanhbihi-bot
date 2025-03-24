@@ -1,35 +1,27 @@
-# 📁 init_superadmin.py
 from sqlalchemy.orm import Session
 from database import SessionLocal
-from models import AdminUser, RoleEnum
-from datetime import datetime
-import bcrypt
+from models import AdminUser
+from passlib.context import CryptContext
 
-
-def hash_password(password: str) -> str:
-    return bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
-
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 def create_super_admin():
     db: Session = SessionLocal()
-    try:
-        existing = db.query(AdminUser).filter(AdminUser.username == "admin").first()
-        if existing:
-            print("⚠️ Super admin 'admin' đã tồn tại.")
-            return
+    existing = db.query(AdminUser).filter(AdminUser.username == "admin").first()
+    
+    if existing:
+        print("✅ Admin đã tồn tại.")
+        return
 
-        admin = AdminUser(
-            username="admin",
-            password_hash=hash_password("admin123"),
-            role=RoleEnum.superadmin,
-            created_at=datetime.utcnow(),
-        )
-        db.add(admin)
-        db.commit()
-        print("✅ Super admin mặc định đã được tạo: admin / admin123")
-    finally:
-        db.close()
-
+    admin = AdminUser(
+        username="admin",
+        password_hash=pwd_context.hash("admin123"),
+        role="superadmin"
+    )
+    db.add(admin)
+    db.commit()
+    db.close()
+    print("✅ Đã tạo tài khoản Super Admin!")
 
 if __name__ == "__main__":
     create_super_admin()

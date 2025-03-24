@@ -1,44 +1,78 @@
-# Node.js (frontend & backend)
-node_modules/
-npm-debug.log
-yarn-debug.log
-yarn-error.log
-pnpm-debug.log
-
-# Build output
-.next/
-out/
+# 🐍 Python
+__pycache__/
+*.py[cod]
+*.egg
+*.egg-info/
 dist/
+build/
+env/
+venv/
+ENV/
+env.bak/
+*.pyo
+*.pyd
+*.pyc
 
-# Logs & Temp files
-logs/
+# 🛢️ Database & Logs
+*.sqlite3
 *.log
 *.pid
-*.seed
-*.sqlite
-*.sqlite3
-tmp/
-temp/
- 
-# Env files (chứa thông tin nhạy cảm như API key, database URL)
+*.db
+instance/
+
+# 🔐 Secrets & ENV
 .env
-.env.local
-.env.development
-.env.production
+.env.*
+!.env.example
+secrets.json
+config.json
 
-# Database files
-db/*.db
-db/*.sql
-db/*.sqlite
-db/*.sqlite3
-db/data/
+# 🐳 Docker
+*.tar
+*.bak
+*.tmp
+*.swp
+.docker/
+docker-compose.override.yml
 
-# Editor & OS files
+# 📦 VSCode, PyCharm, JetBrains IDEs
 .vscode/
 .idea/
+*.code-workspace
+
+# 📂 System
 .DS_Store
 Thumbs.db
 
-# Docker files
-docker-compose.override.yml
-download/
+# 🔬 Alembic (nếu không dùng thì vẫn ignore luôn cho chắc)
+alembic/
+alembic.ini
+
+# 📦 Node.js (nếu frontend dùng npm/yarn)
+node_modules/
+.next/
+dist/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# 📸 Static builds
+frontend/dist/
+frontend/build/
+
+# 🧪 Test / coverage
+htmlcov/
+.tox/
+.coverage
+coverage.xml
+.pytest_cache/
+
+# 🧠 Weaviate / Vector DB
+weaviate_data/
+
+# ✅ Misc
+*.orig
+*.log
+*.bak
+*.sqlite
+*.ipynb_checkpoints/
