@@ -7,32 +7,56 @@ from models import CrawlConfig
 from datetime import datetime
 import requests
 from bs4 import BeautifulSoup
-from services.config_service import set_config
-from pgvector.psycopg2 import register_vector
-from fastapi_socketio import SocketManager
-from services.crawl_service import get_crawl_config, update_crawl_config
+from sqlalchemy import text
+from services.training_service import train_from_web_pages
 from routers.logs_ws import broadcast_log
-from services.training_service import train_from_web_pages  # nếu đã có sẵn service này
+from schemas.crawl import CrawlConfigSchema 
+from services.spider_crawler import crawl_and_download_files
+from services.training_service import train_from_uploaded_files
+import urllib.parse
+from urllib.parse import urlparse, unquote
 
 
 router = APIRouter(prefix="/api/crawl", tags=["crawl"])
 
+# ✅ Schema Pydantic để nhận request
 class CrawlIn(BaseModel):
     url: str
     selector: str
     label: str = ""
 
+def is_valid_url(url):
+    parsed = urlparse(url)
+    return bool(parsed.scheme and parsed.netloc)
+
+# ================================
+# 🔍 Lấy danh sách cấu hình crawl
+# ================================
 @router.get("", response_model=List[CrawlIn])
 def get_all_crawls(db: Session = Depends(get_db)):
     return db.query(CrawlConfig).all()
 
+# ================================
+# ➕ Thêm cấu hình crawl
+# ================================
 @router.post("")
-def add_crawl(config: CrawlIn, db: Session = Depends(get_db)):
-    crawl = CrawlConfig(**config.dict())
-    db.add(crawl)
-    db.commit()
-    return {"message": "✅ Đã thêm crawl config!"}
+def add_crawl(config: CrawlConfigSchema, db: Session = Depends(get_db)):
+    try:
+        crawl = CrawlConfig(
+            url=config.url,
+            depth=config.depth,
+            use_browser=config.use_browser
+        )
+        db.add(crawl)
+        db.commit()
+        return {"message": "✅ Đã thêm crawl config!"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Lỗi khi thêm config: {e}")
 
+
+# ================================
+# ❌ Xoá cấu hình crawl
+# ================================
 @router.delete("/{id}")
 def delete_crawl(id: int, db: Session = Depends(get_db)):
     crawl = db.query(CrawlConfig).filter(CrawlConfig.id == id).first()
@@ -42,6 +66,9 @@ def delete_crawl(id: int, db: Session = Depends(get_db)):
     db.commit()
     return {"message": "🗑️ Đã xoá config crawl"}
 
+# ================================
+# 🚀 Chạy crawl tất cả config
+# ================================
 @router.post("/run")
 async def run_crawl_all(db: Session = Depends(get_db)):
     configs = db.query(CrawlConfig).all()
@@ -57,49 +84,50 @@ async def run_crawl_all(db: Session = Depends(get_db)):
                 url = link["href"].strip() if link else None
                 if not url:
                     continue
-                cursor.execute("""
-                    INSERT INTO web_pages (url, content)
-                    VALUES (%s, %s)
-                    ON CONFLICT (url) DO NOTHING
-                """, (url, content))
+                db.execute(
+                    text("""
+                        INSERT INTO web_pages (url, content)
+                        VALUES (:url, :content)
+                        ON CONFLICT (url) DO NOTHING
+                    """), {"url": url, "content": content}
+                )
                 count += 1
-            conn.commit()
+            db.commit()
             await broadcast_log(f"🌐 Crawled {conf.label or conf.url} - Thêm {count} bản ghi.")
         except Exception as e:
             await broadcast_log(f"⚠️ Lỗi crawl {conf.url}: {e}")
     return {"message": f"✅ Đã crawl {len(configs)} config, thêm {count} bản ghi."}
 
+# ================================
+# ⚡ Crawl & huấn luyện tức thì
+# ================================
 @router.post("/instant")
 async def instant_crawl(payload: dict, db: Session = Depends(get_db)):
     url = payload.get("url")
-    selector = payload.get("selector", "body")  # mặc định là toàn trang
-    label = payload.get("label", "")
+    url = urllib.parse.unquote(url)
 
+    url = unquote(payload.get("url", "").strip())
     if not url:
-        raise HTTPException(status_code=400, detail="Thiếu URL cần crawl")
+        raise HTTPException(status_code=400, detail="Thiếu URL")
+
+    parsed = urlparse(url)
+    if not parsed.scheme or not parsed.netloc:
+        raise HTTPException(status_code=400, detail="❌ URL không hợp lệ")
+
+    if not url or not url.strip():
+        raise HTTPException(status_code=400, detail="Thiếu URL")
 
     try:
-        # Crawl nội dung
-        r = requests.get(url, timeout=10)
-        soup = BeautifulSoup(r.text, "html.parser")
-        content = soup.select_one(selector).text.strip()
-        
-        # Thêm vào DB (web_pages)
-        db.execute(
-            text("""
-            INSERT INTO web_pages (url, content)
-            VALUES (:url, :content)
-            ON CONFLICT (url) DO NOTHING
-            """), {"url": url, "content": content}
-        )
-        db.commit()
+        await broadcast_log(f"🕸️ Đang bắt đầu crawl spider từ: {url}")
+        await crawl_and_download_files(url, depth=2)  # 👈 Crawl đệ quy trong domain, độ sâu 2
 
-        await broadcast_log(f"🌐 Đã crawl ngay URL: {url}")
+        await broadcast_log(f"📥 Đã tải xong tài liệu từ {url}")
+        await broadcast_log(f"🧠 Đang huấn luyện...")
 
-        # Gọi huấn luyện lại (nếu có train pipeline)
-        await train_from_web_pages(db)
+        await train_from_uploaded_files()
 
-        return {"message": f"✅ Đã crawl & huấn luyện từ {url}"}
+        return {"message": f"✅ Crawl & train từ {url} hoàn tất!"}
 
     except Exception as e:
+        await broadcast_log(f"❌ Lỗi huấn luyện: {e}")
         raise HTTPException(status_code=500, detail=f"Lỗi khi crawl: {e}")

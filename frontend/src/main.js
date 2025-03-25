@@ -8,14 +8,6 @@ const app = createApp(App)
 app.use(router)
 app.mount('#app')
 
-window.$toast = {
-    showToast: (msg, type = 'info') => {
-      // Nếu dùng thư viện toast thì gọi thư viện ở đây
-      alert(`[${type.toUpperCase()}] ${msg}`) // 🚨 Tạm thời dùng alert
-      alert(`[${type}] ${msg}`) 
-    }
-}
-
 window.log = (msg) => {
     const logMsg = `[${new Date().toLocaleTimeString()}] ${msg}`
     console.log(logMsg)

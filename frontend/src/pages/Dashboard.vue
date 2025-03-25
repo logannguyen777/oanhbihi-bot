@@ -27,7 +27,7 @@
       <div class="card bg-base-100 shadow">
         <div class="card-body">
           <h2 class="card-title">📄 Dữ liệu web_pages</h2>
-          <p>{{ stats.pages }} mẫu, {{ stats.embedding }} đã embedding</p>
+          <p>{{ stats.pages }} mẫu, {{ totalChunks  }} đã embedding</p>
         </div>
       </div>
 
@@ -65,7 +65,7 @@ let socket = null
 const fetchStats = async () => {
   try {
     const [p, c, w, o] = await Promise.all([
-      
+      getTrainedDocs(),
       getCrawls(),
       getWebPages(),
       getAllConfigs()

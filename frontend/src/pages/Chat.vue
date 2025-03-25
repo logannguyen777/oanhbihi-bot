@@ -2,7 +2,7 @@
     <div class="max-w-3xl mx-auto p-6 space-y-6">
       <h2 class="text-2xl font-bold text-primary mb-4">💬 Chat với Oanh Bihi</h2>
   
-      <!-- Chế độ -->
+      <!-- Chế độ chọn -->
       <div class="flex flex-wrap gap-4">
         <label class="flex items-center gap-2">
           <input type="radio" v-model="mode" value="rag-context" class="radio radio-sm checked:bg-primary" />
@@ -19,45 +19,40 @@
       </div>
   
       <!-- Vùng chat -->
-      <div class="bg-base-100 border rounded-lg p-4 h-[500px] overflow-y-auto space-y-3 shadow-inner" ref="chatBox">
-        <div
-          v-for="(msg, idx) in chatHistory"
-          :key="idx"
-          :class="msg.role === 'user' ? 'chat chat-end' : 'chat chat-start'"
-        >
-          <div class="chat-image avatar">
-            <div class="w-8 rounded-full">
-              <img :src="msg.role === 'user' ? userAvatar : botAvatar" alt="avatar" />
-            </div>
-          </div>
-          <div>
-            <div
-              class="chat-bubble"
-              :class="msg.role === 'user' ? 'chat-bubble-primary' : 'chat-bubble-secondary'"
-            >
-              {{ msg.content }}
-            </div>
-            <div class="text-xs opacity-60 mt-1">
-              {{ msg.role === 'user' }} • {{ formatTime(msg.timestamp) }}
+      <div class="bg-base-100 border rounded-lg p-4 h-[500px] overflow-y-auto space-y-3" ref="chatContainer">
+        <div v-for="(msg, index) in chatLog" :key="index" class="flex items-start gap-2"
+          :class="{ 'justify-end flex-row-reverse': msg.from === 'user' }">
+          <img
+            :src="msg.from === 'bot' ? botAvatar : userAvatar"
+            class="w-8 h-8 rounded-full"
+            :alt="msg.from === 'bot' ? 'Oanh Bihi' : 'Bạn'"
+          />
+          <div class="space-y-1">
+            <div class="text-xs text-gray-500">{{ msg.from === 'bot' ? 'Oanh Bihi' : 'Bạn' }} • {{ msg.timestamp }}</div>
+            <div class="p-3 rounded-2xl text-sm whitespace-pre-wrap max-w-[300px]" :class="{
+              'bg-blue-500 text-white': msg.from === 'user',
+              'bg-gray-100 text-gray-800': msg.from === 'bot',
+              'bg-red-100 text-red-700': msg.from === 'error'
+            }">
+              {{ msg.text }}
             </div>
           </div>
         </div>
+  
+        <div v-if="isLoading" class="text-center text-sm text-gray-500 mt-2 animate-pulse">
+          Đang gửi câu hỏi cho Oanh Bihi... ⏳
+        </div>
       </div>
   
-      <!-- Nhập tin -->
-      <div class="flex gap-2 items-end">
-        <textarea
-          v-model="message"
-          @keydown.enter.exact.prevent="sendMessage"
-          @keydown.enter.shift="() => {}"
-          placeholder="Nhấn Enter để gửi, Shift+Enter để xuống dòng..."
-          rows="2"
-          class="textarea textarea-bordered flex-1 resize-none"
+      <!-- Nhập tin nhắn -->
+      <div class="flex gap-2">
+        <input
+          v-model="userInput"
+          @keyup.enter="sendMessage"
+          class="input input-bordered w-full"
+          placeholder="Nhập câu hỏi và nhấn Enter..."
         />
-        <button class="btn btn-primary" @click="sendMessage" :disabled="loading">
-          <span v-if="loading" class="loading loading-spinner"></span>
-          <span v-else>Gửi</span>
-        </button>
+        <button @click="sendMessage" class="btn btn-primary" :disabled="isLoading">Gửi</button>
       </div>
     </div>
   </template>
@@ -66,90 +61,69 @@
   import { ref, onMounted, nextTick } from 'vue'
   import api from '@/router/api'
   
-  const message = ref('')
-  const chatHistory = ref([])
   const mode = ref('rag-context')
-  const loading = ref(false)
+  const isLoading = ref(false)
+  const sessionId = ref(Date.now().toString())
+  const chatLog = ref([])
+  const userInput = ref('')
+  const chatContainer = ref(null)
   
-  const botAvatar = 'https://i.imgur.com/BYkRZ5b.png'
-  const userAvatar = 'https://i.imgur.com/xT5yF4M.png'
+  const userAvatar = 'https://api.dicebear.com/7.x/thumbs/svg?seed=user'
+  const botAvatar = '/logo.png'
   
-  const chatBox = ref(null)
+  // WebSocket nhận log từ backend
+  const logs = ref([])
+  let ws = null
   
-  const scrollToBottom = async () => {
-    await nextTick()
-    chatBox.value.scrollTop = chatBox.value.scrollHeight
-  }
-  
-  const formatTime = (isoString) => {
-    const date = new Date(isoString)
-    return `${date.getHours().toString().padStart(2, '0')}:${date
-      .getMinutes()
-      .toString()
-      .padStart(2, '0')}`
-  }
-  
-  const sendMessage = async () => {
-    if (!message.value.trim()) return window.$toast.showToast('⚠️ Nhập gì đi anh ơi!', 'info')
-  
-    const text = message.value.trim()
-    const userMsg = { role: 'user', content: text, timestamp: new Date().toISOString() }
-    chatHistory.value.push(userMsg)
-    loading.value = true
-    message.value = ''
-    scrollToBottom()
-  
-    try {
-      let res
-      if (mode.value === 'rag') {
-        res = await api.post('/api/chat-rag', { input_text: text })
-      } else if (mode.value === 'context') {
-        res = await api.post('/api/chat', {
-          sender_id: 'admin',
-          channel: 'web',
-          message: text,
-          session_id: null
-        })
-      } else {
-        // rag-context
-        const history = chatHistory.value.map(msg => ({
-          role: msg.role,
-          content: msg.content
-        }))
-        res = await api.post('/api/chat-rag-context', {
-          question: text,
-          history
-        })
-      }
-  
-      const reply = res?.data?.reply || '🤖 Không có phản hồi từ bot!'
-      chatHistory.value.push({ role: 'bot', content: reply, timestamp: new Date().toISOString() })
-      window.$toast.showToast('✅ Oanh Bihi đã phản hồi!', 'success')
-    } catch (err) {
-      chatHistory.value.push({
-        role: 'bot',
-        content: '❌ Có lỗi xảy ra òi! Em xin lỗi anh nha...',
-        timestamp: new Date().toISOString()
-      })
-      window.$toast.showToast('❌ Lỗi rồi đó anh ơi!', 'error')
-    } finally {
-      loading.value = false
-      scrollToBottom()
-    }
-  }
-  
-  // WebSocket realtime (chưa gửi từ backend thì không nhận được đâu nha)
   onMounted(() => {
-    const ws = new WebSocket(`ws://${window.location.host}/ws/logs`)
+    ws = new WebSocket('ws://localhost:8000/ws/logs')
     ws.onmessage = (event) => {
-      const msg = {
-        role: 'bot',
-        content: `[Log]: ${event.data}`,
-        timestamp: new Date().toISOString()
-      }
-      chatHistory.value.push(msg)
-      scrollToBottom()
+      logs.value.push(event.data)
+      console.log("📡 Log:", event.data)
     }
   })
+  
+  function getTimeNow() {
+    return new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })
+  }
+  
+  async function sendMessage() {
+    if (!userInput.value.trim()) return
+    const text = userInput.value.trim()
+    userInput.value = ''
+    chatLog.value.push({ from: 'user', text, timestamp: getTimeNow() })
+  
+    await nextTick(() => {
+      chatContainer.value.scrollTop = chatContainer.value.scrollHeight
+    })
+  
+    isLoading.value = true
+    try {
+      let endpoint = '/api/chat'
+      if (mode.value === 'rag') endpoint = '/api/chat-rag'
+      else if (mode.value === 'rag-context') endpoint = '/api/chat-rag-context'
+  
+      const payload = {
+        sender_id: 'user-123',
+        channel: 'web',
+        message: text,
+        session_id: sessionId.value,
+      }
+  
+      const res = await api.post(endpoint, payload)
+      const botReply = res.data.reply || res.data.message || '🤖 Không có phản hồi'
+      chatLog.value.push({ from: 'bot', text: botReply, timestamp: getTimeNow() })
+      //alert('Đã gửi câu hỏi 🎯')
+    } catch (err) {
+      console.error("❌ Chat API error:", err)
+      chatLog.value.push({ from: 'error', text: 'Có lỗi xảy ra khi gửi câu hỏi!', timestamp: getTimeNow() })
+      //alert('Oanh Bihi đang bận 😢')
+    } finally {
+      isLoading.value = false
+      await nextTick(() => {
+        chatContainer.value.scrollTop = chatContainer.value.scrollHeight
+      })
+    }
+  }
   </script>
   

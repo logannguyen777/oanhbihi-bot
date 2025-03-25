@@ -9,6 +9,7 @@ from database import get_db
 from models.web_page import WebPage
 from models.trained_document import TrainedDocument
 from routers.logs_ws import broadcast_log
+from services.training_service import train_all
 
 router = APIRouter(prefix="/api/train", tags=["Train"])
 UPLOAD_FOLDER = "downloads"
@@ -33,18 +34,9 @@ async def upload_files(files: list[UploadFile] = File(...), db: Session = Depend
     return {"message": "Upload thành công", "files": uploaded}
 
 @router.post("/start")
-def start_training():
-    try:
-        result = subprocess.run(["python", "train_data.py"], capture_output=True, text=True, timeout=60)
-        return {
-            "message": "✅ Đã gọi script huấn luyện!",
-            "stdout": result.stdout,
-            "stderr": result.stderr,
-        }
-    except subprocess.TimeoutExpired:
-        return {"message": "⏱️ Quá thời gian khi train bot!"}
-    except Exception as e:
-        return {"message": f"Lỗi: {e}"}
+async def start_training():
+    await train_all()
+    return {"status": "ok", "message": "Đã bắt đầu huấn luyện!"}
     
 @router.get("/web-pages")
 def get_web_pages(db: Session = Depends(get_db)):

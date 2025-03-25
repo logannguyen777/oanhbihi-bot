@@ -8,3 +8,4 @@ class WebPage(Base):
     url = Column(String, unique=True, index=True)
     content = Column(String)
     embedding = Column(String)  # Trường lưu vector dạng JSON hoặc array
+    chunk_count = Column(Integer, default=0)

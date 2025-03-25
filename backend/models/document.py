@@ -12,6 +12,8 @@ class Document(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid4)
     filename = Column(String, nullable=False)
     source = Column(String, nullable=True)  # web / upload
+    chunk_count = Column(Integer, default=0)
+
     created_at = Column(DateTime, default=datetime.utcnow)
 
     chunks = relationship("DocumentChunk", back_populates="document", cascade="all, delete-orphan")
