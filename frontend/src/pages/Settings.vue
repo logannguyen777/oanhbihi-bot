@@ -50,6 +50,11 @@
     <!-- 💾 SAVE -->
     <SaveButton @click="saveAllConfigs" :loading="loading" />
 
+    <!-- 🌐 Huấn luyện ngay từ URL -->
+    <SectionCard title="🚀 Huấn luyện ngay từ URL (demo)">
+      <button class="btn btn-warning w-full" @click="crawlAndTrainNow">Crawl & Huấn luyện ngay</button>
+    </SectionCard>
+
     <!-- 🧾 LOG -->
     <div class="space-y-6">
       <h2 class="text-xl font-bold text-orange-500">🧾 Log hệ thống (Realtime)</h2>
@@ -87,6 +92,18 @@ const fetchConfigs = async () => {
     config.value = { ...config.value, ...res.data }  // ✅ Merge luôn object
   } catch {
     toast('❌ Lỗi tải cấu hình hệ thống!', 'error')
+  }
+}
+
+import { crawlInstantUrl } from '@/router/api'
+
+const crawlAndTrainNow = async () => {
+  if (!config.value.crawl_urls) return window.$toast.showToast('❌ Chưa nhập URL!', 'error')
+  try {
+    await crawlInstantUrl(config.value.crawl_urls.split('\n')[0])  // chỉ crawl URL đầu tiên
+    window.$toast.showToast('✅ Đã crawl & huấn luyện!', 'success')
+  } catch {
+    window.$toast.showToast('❌ Lỗi crawl & huấn luyện', 'error')
   }
 }
 

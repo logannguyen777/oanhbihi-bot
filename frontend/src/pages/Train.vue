@@ -32,7 +32,7 @@
     <!-- Start Training -->
     <div class="bg-black rounded-lg shadow p-4 space-y-3">
       <h3 class="text-lg font-semibold">⚙️ Bắt đầu huấn luyện</h3>
-      <button class="btn btn-primary w-full" :disabled="training" @click="startTraining">
+      <button class="btn btn-primary w-full" :disabled="training" @click="startTrainingHandler">
         <span v-if="training" class="loading loading-spinner"></span>
         <span v-else>Huấn luyện ngay</span>
       </button>
@@ -58,9 +58,9 @@
         </thead>
         <tbody>
           <tr v-for="doc in trainedDocs" :key="doc.id">
-            <td>{{ doc.filename }}</td>
-            <td>{{ doc.source }}</td>
-            <td>{{ doc.chunk_count }}</td>
+            <td>{{ doc.filename || doc.url }}</td>
+            <td>{{ doc.source || 'web' }}</td>
+            <td>{{ doc.chunk_count || (doc.content ? doc.content.length : 0) }}</td>
             <td>{{ new Date(doc.created_at).toLocaleString() }}</td>
           </tr>
         </tbody>
@@ -73,10 +73,10 @@
 import { ref, onMounted } from 'vue'
 import LogConsole from '@/components/LogConsole.vue'
 import {
-  uploadTrainingFiles,
+  uploadTrainFiles,
   startTraining,
   getTrainedDocs,
-  crawlUrl,
+  crawlUrl
 } from '@/router/api'
 
 const files = ref([])
@@ -98,8 +98,9 @@ const uploadFiles = async () => {
   files.value.forEach((file) => formData.append('files', file))
 
   try {
-    await uploadTrainingFiles(formData)
+    await uploadTrainFiles(formData)
     window.$toast.showToast('✅ Upload thành công!', 'success')
+    await fetchTrainedDocs()
   } catch (err) {
     window.$toast.showToast('❌ Upload thất bại!', 'error')
   } finally {
@@ -110,7 +111,9 @@ const uploadFiles = async () => {
 const startTrainingHandler = async () => {
   training.value = true
   try {
-    await startTraining(selectedModel.value)
+    const res = await startTraining()
+    logs.value.push(res.data.stdout || '')
+    logs.value.push(res.data.stderr || '')
     window.$toast.showToast('✅ Huấn luyện hoàn tất!', 'success')
     await fetchTrainedDocs()
   } catch (err) {
@@ -120,28 +123,29 @@ const startTrainingHandler = async () => {
   }
 }
 
+
+const fetchTrainedDocs = async () => {
+  const res = await getTrainedDocs()
+  trainedDocs.value = [...res.data.uploads, ...res.data.web]
+}
+
 const crawlAndTrain = async () => {
   try {
-    await crawlUrl(url.value)
+    await crawlUrl({
+      url: url.value,
+      selector: 'body', // Hoặc selector cụ thể của anh
+      label: 'Train URL'
+    })
     await startTrainingHandler()
   } catch (err) {
     window.$toast.showToast('❌ Crawl thất bại!', 'error')
   }
 }
 
-const fetchTrainedDocs = async () => {
-  const res = await getTrainedDocs()
-  trainedDocs.value = res.data
-}
-
 onMounted(() => {
-  const ws = new WebSocket(`ws://${window.location.host}/ws/logs`)
+  const ws = new WebSocket(import.meta.env.VITE_BACKEND_WS || `ws://${window.location.host}/ws/logs`)
   ws.onmessage = (event) => {
     logs.value.push(event.data)
-    setTimeout(() => {
-      const logDiv = document.querySelector('.overflow-y-scroll')
-      logDiv.scrollTop = logDiv.scrollHeight
-    }, 100)
   }
   fetchTrainedDocs()
 })

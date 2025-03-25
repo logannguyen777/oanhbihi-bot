@@ -34,12 +34,22 @@ export const uploadTrainingFiles = (formData) => {
     })
 }
 
+export const uploadTrainFiles = (formData) => api.post('/api/train/upload', formData)
 export const startTraining = () => api.post('/api/train/start')
-export const getTrainedDocs = () => api.get('/api/train/web-pages')
-export const crawlUrl = (url) => {
-    return api.post('/api/crawl', { url })
+export const getTrainedDocs = () => api.get('/api/training/docs')
+
+export const crawlUrl = (data) => {
+    return api.post('/api/crawl', data)
 }
-  
+
+export const crawlInstantUrl = (url) => {
+    return api.post('/api/crawl/instant', {
+      url: url,
+      selector: 'body',
+      label: 'Từ Settings'
+    })
+}
+
 // CONFIG
 export const getAllConfigs = () => api.get('/api/config')
 export const getConfigByKey = (key) => api.get('/api/config', { params: { key } })

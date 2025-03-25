@@ -9,6 +9,8 @@ import json
 import os
 from sqlalchemy import text
 from services.openai_client import get_openai_client
+from openai import OpenAI
+
 
 chat_router = APIRouter(prefix="/api", tags=["Chat"])
 
@@ -76,13 +78,17 @@ def get_embedding(text: str, client: OpenAI) -> list[float]:
     return response.data[0].embedding
 
 def search_chunks_from_documents(embedding: list[float], db: Session, k=3):
-    sql = text("""
+    # ✅ Convert list[float] thành chuỗi vector đúng định dạng PGVector
+    embedding_str = "[" + ", ".join(str(x) for x in embedding) + "]"
+
+    # ✅ Gắn trực tiếp vào câu query vì không thể bind kiểu vector
+    sql = text(f"""
         SELECT content
         FROM document_chunks
-        ORDER BY embedding <#> :embedding
+        ORDER BY embedding <#> '{embedding_str}'::vector
         LIMIT :limit
     """)
-    result = db.execute(sql, {"embedding": embedding, "limit": k})
+    result = db.execute(sql, {"limit": k})
     return [row[0] for row in result.fetchall()]
 
 def search_chunks_from_web(embedding: list[float], db: Session, k=3):
@@ -104,6 +110,9 @@ def search_chunks_from_web(embedding: list[float], db: Session, k=3):
 @chat_router.post("/chat")
 def chat_with_context(payload: ChatRequest, db: Session = Depends(get_db)):
     user = get_or_create_user(payload.sender_id, payload.channel, db)
+
+    print("📥 Nhận được câu hỏi:", payload.question)
+    print("📜 Lịch sử:", payload.history)
 
     db.add(ChatLog(
         user_id=user.id,
@@ -143,6 +152,7 @@ def chat_with_context(payload: ChatRequest, db: Session = Depends(get_db)):
 
 @chat_router.post("/chat-rag")
 def chat_with_rag(payload: RAGRequest):
+    print("📥 Nhận được input:", payload.input_text)
     try:
         response = openai.ChatCompletion.create(
             model="gpt-3.5-turbo",
@@ -170,7 +180,7 @@ def chat_with_rag_and_context(payload: ChatWithRAGContextRequest, db: Session = 
         timestamp=datetime.utcnow(),
     ))
     db.commit()
-
+    print("📥 Nhận được input:", payload.input_text)
     # Lấy context hội thoại
     context_logs = get_recent_context(user.id, db)
     messages = [{"role": log.role.value, "content": log.message} for log in context_logs]

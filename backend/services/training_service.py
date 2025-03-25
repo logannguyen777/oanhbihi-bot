@@ -35,18 +35,26 @@ async def train_from_web_pages():
     db: Session = SessionLocal()
     try:
         await broadcast_log("🌐 Huấn luyện từ dữ liệu web đã crawl...")
-        pages = db.query(WebPage).all()
+        pages = db.query(WebPage).filter(WebPage.embedding == None).all()
+        count = 0
         for page in pages:
+            if not page.content.strip():
+                continue
             chunks = split_text(page.content)
             doc = Document(filename=page.url, source="web")
             db.add(doc)
             db.flush()
             for chunk in chunks:
-                emb = generate_embedding(chunk)
-                doc_chunk = DocumentChunk(content=chunk, embedding=emb, document_id=doc.id)
-                db.add(doc_chunk)
+                try:
+                    emb = generate_embedding(chunk)
+                    doc_chunk = DocumentChunk(content=chunk, embedding=emb, document_id=doc.id)
+                    db.add(doc_chunk)
+                except Exception as e:
+                    await broadcast_log(f"❌ Lỗi embedding web chunk: {e}")
+            page.embedding = "[trained]"
+            count += 1
         db.commit()
-        await broadcast_log(f"✅ Đã huấn luyện {len(pages)} trang web")
+        await broadcast_log(f"✅ Đã huấn luyện {count} trang web")
     finally:
         db.close()
 
@@ -55,6 +63,7 @@ async def train_from_uploaded_files():
     try:
         await broadcast_log("📄 Huấn luyện từ tài liệu đã upload...")
         files = os.listdir(DOWNLOADS_FOLDER)
+        count = 0
         for file in files:
             path = os.path.join(DOWNLOADS_FOLDER, file)
             ext = os.path.splitext(file)[1].lower()
@@ -79,15 +88,22 @@ async def train_from_uploaded_files():
                 await broadcast_log(f"❌ Lỗi đọc file {file}: {e}")
                 continue
 
+            if not content.strip():
+                continue
+
             chunks = split_text(content)
             doc = Document(filename=file, source="upload")
             db.add(doc)
             db.flush()
             for chunk in chunks:
-                emb = generate_embedding(chunk)
-                doc_chunk = DocumentChunk(content=chunk, embedding=emb, document_id=doc.id)
-                db.add(doc_chunk)
+                try:
+                    emb = generate_embedding(chunk)
+                    doc_chunk = DocumentChunk(content=chunk, embedding=emb, document_id=doc.id)
+                    db.add(doc_chunk)
+                except Exception as e:
+                    await broadcast_log(f"❌ Lỗi embedding tài liệu: {e}")
+            count += 1
         db.commit()
-        await broadcast_log(f"✅ Đã huấn luyện {len(files)} tài liệu")
+        await broadcast_log(f"✅ Đã huấn luyện {count} tài liệu")
     finally:
         db.close()

@@ -5,18 +5,17 @@ import os
 import shutil
 import subprocess
 import openai
-#from services.training_service import trigger_training_pipeline
 from database import get_db
 from models.web_page import WebPage
+from models.trained_document import TrainedDocument
+from routers.logs_ws import broadcast_log
 
 router = APIRouter(prefix="/api/train", tags=["Train"])
 UPLOAD_FOLDER = "downloads"
 
 
-
-
 @router.post("/upload")
-async def upload_files(files: list[UploadFile] = File(...)):
+async def upload_files(files: list[UploadFile] = File(...), db: Session = Depends(get_db)):
     uploaded = []
     os.makedirs(UPLOAD_FOLDER, exist_ok=True)
     for file in files:
@@ -24,6 +23,13 @@ async def upload_files(files: list[UploadFile] = File(...)):
         with open(file_path, "wb") as f:
             shutil.copyfileobj(file.file, f)
         uploaded.append(file.filename)
+
+        # Lưu thông tin vào bảng TrainedDocument
+        doc = TrainedDocument(filename=file.filename, source="upload", chunk_count=0)
+        db.add(doc)
+        await broadcast_log(f"📄 Đã upload tài liệu: {file.filename}")
+    
+    db.commit()
     return {"message": "Upload thành công", "files": uploaded}
 
 @router.post("/start")
