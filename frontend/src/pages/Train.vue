@@ -3,7 +3,7 @@
     <h2 class="text-2xl font-bold text-primary">🧠 Huấn luyện Oanh Bihi Bot</h2>
 
     <!-- Upload Files -->
-    <div class="bg-white rounded-lg shadow p-4 space-y-3">
+    <div class="bg-black rounded-lg shadow p-4 space-y-3">
       <h3 class="text-lg font-semibold">📁 Upload tài liệu</h3>
       <input type="file" multiple @change="handleFileChange" class="file-input file-input-bordered w-full" />
       <button class="btn btn-secondary w-full" :disabled="!files.length || loading" @click="uploadFiles">
@@ -13,14 +13,14 @@
     </div>
 
     <!-- Crawl URL -->
-    <div class="bg-white rounded-lg shadow p-4 space-y-3">
+    <div class="bg-black rounded-lg shadow p-4 space-y-3">
       <h3 class="text-lg font-semibold">🌐 Crawl & Train từ URL</h3>
       <input v-model="url" type="text" placeholder="Nhập URL..." class="input input-bordered w-full" />
       <button class="btn btn-accent w-full mt-2" :disabled="!url" @click="crawlAndTrain">Crawl và Huấn luyện</button>
     </div>
 
     <!-- Select Model -->
-    <div class="bg-white rounded-lg shadow p-4 space-y-3">
+    <div class="bg-black rounded-lg shadow p-4 space-y-3">
       <h3 class="text-lg font-semibold">🧠 Chọn mô hình embedding</h3>
       <select v-model="selectedModel" class="select select-bordered w-full">
         <option value="text-embedding-ada-002">OpenAI - Ada</option>
@@ -30,7 +30,7 @@
     </div>
 
     <!-- Start Training -->
-    <div class="bg-white rounded-lg shadow p-4 space-y-3">
+    <div class="bg-black rounded-lg shadow p-4 space-y-3">
       <h3 class="text-lg font-semibold">⚙️ Bắt đầu huấn luyện</h3>
       <button class="btn btn-primary w-full" :disabled="training" @click="startTraining">
         <span v-if="training" class="loading loading-spinner"></span>
@@ -45,7 +45,7 @@
     </div>
 
     <!-- Trained Documents Table -->
-    <div class="bg-white rounded-lg shadow p-4 space-y-3">
+    <div class="bg-black rounded-lg shadow p-4 space-y-3">
       <h3 class="text-lg font-semibold">📊 Danh sách tài liệu đã huấn luyện</h3>
       <table class="table w-full">
         <thead>

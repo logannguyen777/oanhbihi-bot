@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from database import get_db
 from services import config_service
@@ -29,3 +29,15 @@ def delete_config_value(key: str, db: Session = Depends(get_db)):
     if not success:
         raise HTTPException(status_code=404, detail="Config not found")
     return {"message": "Config deleted successfully"}
+
+
+@router.post("")
+def set_config(key: str = Query(...), value: str = Query(...), db: Session = Depends(get_db)):
+    config = db.query(AppConfig).filter(AppConfig.key == key).first()
+    if config:
+        config.value = value
+    else:
+        config = AppConfig(key=key, value=value)
+        db.add(config)
+    db.commit()
+    return {"message": f"✅ Đã lưu cấu hình {key}"}

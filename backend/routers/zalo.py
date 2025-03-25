@@ -1,24 +1,18 @@
-from fastapi import APIRouter, Request, HTTPException
+from fastapi import APIRouter, Request, HTTPException, Depends
 from fastapi.responses import JSONResponse
-import os
+from sqlalchemy.orm import Session
+from services.config_service import get_config
+from database import get_db
 
-router = APIRouter(
-    prefix="/zalo",
-    tags=["zalo"]
-)
-
-VERIFY_TOKEN = os.getenv("ZALO_VERIFY_TOKEN", "zalo_secret")
+router = APIRouter(prefix="/zalo", tags=["zalo"])
 
 @router.post("/webhook")
-async def zalo_webhook(request: Request):
+async def zalo_webhook(request: Request, db: Session = Depends(get_db)):
     body = await request.json()
-    
-    # Xác thực verify token nếu có
+    VERIFY_TOKEN = get_config(db, "zalo_verify_token")
+
     if "data" not in body:
         raise HTTPException(status_code=400, detail="Invalid Zalo payload")
 
-    # TODO: Xử lý tin nhắn nhận được từ Zalo
-    # Ví dụ: in ra log
     print("Zalo message received:", body["data"])
-
     return JSONResponse(content={"message": "received"}, status_code=200)

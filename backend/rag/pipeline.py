@@ -43,7 +43,8 @@ async def init_rag_pipeline():
         BOT_PERSONA = get_config(db, "persona") or "Bạn là Oanh Bihi, 18 tuổi 🎀..."
 
         if api_key:
-            client = OpenAI(api_key=api_key)
+            from services.openai_client import get_openai_client
+            client = get_openai_client(db)
             print("✅ OpenAI API Key hợp lệ")
             await broadcast_log("✅ OpenAI API Key hợp lệ")  # ✅ thay sio.emit
         else:
@@ -170,42 +171,58 @@ class ChatRequest(BaseModel):
     input_text: str
 
 async def chat_endpoint(request: ChatRequest):
-    if not client or not conn or not cursor:
-        return {"error": "⚠️ Hệ thống chưa sẵn sàng"}
-
     try:
+        db: Session = next(get_db())
+        api_key = get_config(db, "openai_key")
+        persona = get_config(db, "persona") or "Bạn là Oanh Bihi, 18 tuổi 🎀..."
+        model = get_config(db, "openai_model") or "gpt-3.5-turbo"
+
+        if not api_key:
+            return {"error": "⚠️ Thiếu OpenAI API Key"}
+
+        client = OpenAI(api_key=api_key)
+        conn = psycopg2.connect(
+            dbname="chatbot_db",
+            user="chatbot_user",
+            password="secretpassword",
+            host="oanhbihi-postgres",
+            port="5432"
+        )
+        cursor = conn.cursor()
+        register_vector(conn)
+
+        # 🔎 Get embedding for user input
         embed_resp = client.embeddings.create(
             input=request.input_text,
             model="text-embedding-ada-002"
         )
         query_vector = embed_resp.data[0].embedding
 
-        cursor.execute("""
-            SELECT content
-            FROM web_pages
-            ORDER BY embedding <-> %s
-            LIMIT 3;
-        """, (Json(query_vector),))
-        rows = cursor.fetchall()
-        context = "\\n\\n".join([r[0] for r in rows])
+        # 🔍 Query both web_pages and document_chunks
+        cursor.execute("SELECT content FROM web_pages ORDER BY embedding <-> %s LIMIT 3;", (Json(query_vector),))
+        web_results = cursor.fetchall()
 
+        cursor.execute("SELECT text FROM document_chunks ORDER BY embedding <-> %s LIMIT 3;", (Json(query_vector),))
+        doc_results = cursor.fetchall()
+
+        context_parts = [r[0] for r in web_results] + [r[0] for r in doc_results]
+        context = "\\n\\n".join(context_parts)
+
+        # 💬 Chat completion
         messages = [
-            {"role": "system", "content": f"{BOT_PERSONA}\\n\\n{context}"},
+            {"role": "system", "content": f"{persona}\\n\\n{context}"},
             {"role": "user", "content": request.input_text}
         ]
 
         chat_resp = client.chat.completions.create(
-            model="gpt-3.5-turbo",
+            model=model,
             messages=messages
         )
         bot_response = chat_resp.choices[0].message.content
 
-        cursor.execute(
-            "INSERT INTO chat_logs (user_message, bot_response) VALUES (%s, %s)",
-            (request.input_text, bot_response)
-        )
-        conn.commit()
+        # 💾 Optional: Save chat to DB if needed
         return {"response": bot_response}
+
     except Exception as e:
         print(f"⚠️ Lỗi chat: {e}")
         return {"error": str(e)}

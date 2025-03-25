@@ -30,8 +30,7 @@ export const crawlUrl = (url) => {
 // CONFIG
 export const getAllConfigs = () => api.get('/api/config')
 export const getConfigByKey = (key) => api.get('/api/config', { params: { key } })
-export const setConfigByKey = (key, value) =>
-  api.post('/api/config', null, { params: { key, value } })
+export const setConfigByKey = (key, value) => api.post('/api/config', null, { params: { key, value } }) 
 export const saveSectionConfig = (endpoint, data) => api.post(endpoint, data)
 
 // PERSONA

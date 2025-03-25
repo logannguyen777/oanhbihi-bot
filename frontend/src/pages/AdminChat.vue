@@ -1,7 +1,7 @@
 <template>
   <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
     <!-- User List -->
-    <div class="bg-white shadow rounded-lg p-4">
+    <div class="bg- shadow rounded-lg p-4">
       <h2 class="text-lg font-bold mb-2 text-primary">👥 Người dùng</h2>
       <ul class="space-y-2 max-h-[400px] overflow-y-auto">
         <li v-for="user in users" :key="user.user_id">

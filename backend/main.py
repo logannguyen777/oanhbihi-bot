@@ -1,12 +1,15 @@
+import asyncio
 from fastapi import FastAPI, WebSocket
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi_socketio import SocketManager
-from database import Base, engine
+from sqlalchemy.orm import Session
+from database import Base, engine, SessionLocal
 from db.init_db import init_db
 from routers.admin_chat import get_admin_chat_router
 from routers.chat import router as chat_router
 from rag.pipeline import init_rag_pipeline, chat_endpoint, chat_history_endpoint
 from routers import logs_ws
+from models.config_model import AppConfig
 
 
 app = FastAPI()
@@ -16,9 +19,12 @@ from routers import zalo, messenger, config, training, auth, persona, crawl
 
 # Khởi tạo DB và pipeline khi app khởi động
 @app.on_event("startup")
-def on_startup():
+async def on_startup():
     init_db()
-    init_rag_pipeline(sio)
+    db = SessionLocal()
+    create_default_config(db)
+    db.close()
+    #asyncio.create_task(init_rag_pipeline())
 
 # Tạo bảng
 Base.metadata.create_all(bind=engine)
@@ -31,6 +37,20 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+def create_default_config(db: Session):
+    default_entries = {
+        "openai_key": "",
+        "persona": "Bạn là Oanh Bihi, 18 tuổi 🎀, dễ thương, hỗ trợ sinh viên Viện Công Nghệ Tài Chính...",
+    }
+
+    for key, value in default_entries.items():
+        existing = db.query(AppConfig).filter(AppConfig.key == key).first()
+        if not existing:
+            config = AppConfig(key=key, value=value)
+            db.add(config)
+    db.commit()
+
 
 # Đăng ký router
 app.include_router(chat_router)
