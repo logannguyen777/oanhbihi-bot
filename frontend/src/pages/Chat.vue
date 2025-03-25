@@ -4,6 +4,10 @@
   
       <div class="flex gap-4 items-center">
         <label class="label cursor-pointer">
+            <input type="radio" v-model="mode" value="rag-context" class="radio radio-sm checked:bg-primary" />
+            <span class="ml-2">RAG + Context (mặc định)</span>
+        </label>
+        <label class="label cursor-pointer">
           <input type="radio" v-model="mode" value="rag" class="radio radio-sm checked:bg-primary" />
           <span class="ml-2">RAG</span>
         </label>
@@ -34,7 +38,7 @@
   const message = ref('')
   const reply = ref('')
   const loading = ref(false)
-  const mode = ref('rag') // 'rag' | 'context'
+  const mode = ref('rag-context') // 'rag' | 'context'
   
   const sendMessage = async () => {
     if (!message.value) return window.$toast.showToast('⚠️ Vui lòng nhập nội dung', 'info')
@@ -42,17 +46,25 @@
     reply.value = ''
   
     try {
-      let res
-      if (mode.value === 'rag') {
-        res = await api.post('/api/chat', { input_text: message.value })
-      } else {
+        let res
+        if (mode.value === 'rag') {
+        res = await api.post('/api/chat-rag', { input_text: message.value })
+        } else if (mode.value === 'context') {
         res = await api.post('/api/chat', {
-          sender_id: 'admin',
-          channel: 'web',
-          message: message.value,
-          session_id: null,
+            sender_id: 'admin',
+            channel: 'web',
+            message: message.value,
+            session_id: null,
         })
-      }
+        } else {
+        // 👇 Mặc định: rag-context
+        res = await api.post('/api/chat-rag-context', {
+            sender_id: 'admin',
+            channel: 'web',
+            message: message.value,
+            session_id: null,
+        })
+        }
   
       reply.value = res?.data?.reply || '🤖 Không có phản hồi từ bot!'
       window.$toast.showToast('✅ Bot đã phản hồi!', 'success')

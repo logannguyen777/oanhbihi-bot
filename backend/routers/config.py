@@ -2,11 +2,12 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from database import get_db
 from services import config_service
-from services.config_service import get_all_configs
-
+from models.config_model import AppConfig  # Nhớ import nếu chưa có
+from typing import Optional
 
 router = APIRouter(prefix="/api/config", tags=["Config"])
 
+# 🔹 Lấy giá trị config theo key
 @router.get("/{key}", response_model=str)
 def get_config_value(key: str, db: Session = Depends(get_db)):
     value = config_service.get_config(db, key)
@@ -14,25 +15,18 @@ def get_config_value(key: str, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Config not found")
     return value
 
-@router.post("/")
-def set_config_value(key: str, value: str, db: Session = Depends(get_db)):
-    config_service.set_config(db, key, value)
-    return {"message": "Config saved successfully"}
-
-@router.get("/", response_model=dict)
+# 🔹 Lấy toàn bộ config
+@router.get("", response_model=dict)
 def get_all_configs(db: Session = Depends(get_db)):
-    return config_service.get_all_configs(db) 
+    return config_service.get_all_configs(db)
 
-@router.delete("/{key}")
-def delete_config_value(key: str, db: Session = Depends(get_db)):
-    success = config_service.delete_config(db, key)
-    if not success:
-        raise HTTPException(status_code=404, detail="Config not found")
-    return {"message": "Config deleted successfully"}
-
-
+# 🔹 Tạo hoặc cập nhật config
 @router.post("")
-def set_config(key: str = Query(...), value: str = Query(...), db: Session = Depends(get_db)):
+def set_config(
+    key: str = Query(...),
+    value: str = Query(...),
+    db: Session = Depends(get_db)
+):
     config = db.query(AppConfig).filter(AppConfig.key == key).first()
     if config:
         config.value = value
@@ -40,4 +34,12 @@ def set_config(key: str = Query(...), value: str = Query(...), db: Session = Dep
         config = AppConfig(key=key, value=value)
         db.add(config)
     db.commit()
-    return {"message": f"✅ Đã lưu cấu hình {key}"}
+    return {"message": f"✅ Đã lưu cấu hình '{key}' thành công!"}
+
+# 🔹 Xoá config theo key
+@router.delete("/{key}")
+def delete_config_value(key: str, db: Session = Depends(get_db)):
+    success = config_service.delete_config(db, key)
+    if not success:
+        raise HTTPException(status_code=404, detail="Config not found")
+    return {"message": f"🗑️ Đã xoá cấu hình '{key}'"}

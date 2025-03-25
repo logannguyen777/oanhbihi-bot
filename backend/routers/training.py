@@ -9,13 +9,13 @@ import openai
 from database import get_db
 from models.web_page import WebPage
 
-router = APIRouter(prefix="/api/training", tags=["Training"])
+router = APIRouter(prefix="/api/train", tags=["Train"])
 UPLOAD_FOLDER = "downloads"
 
 
 
 
-@router.post("/api/train/upload")
+@router.post("/upload")
 async def upload_files(files: list[UploadFile] = File(...)):
     uploaded = []
     os.makedirs(UPLOAD_FOLDER, exist_ok=True)
@@ -26,7 +26,7 @@ async def upload_files(files: list[UploadFile] = File(...)):
         uploaded.append(file.filename)
     return {"message": "Upload thành công", "files": uploaded}
 
-@router.post("/api/train/start")
+@router.post("/start")
 def start_training():
     try:
         result = subprocess.run(["python", "train_data.py"], capture_output=True, text=True, timeout=60)

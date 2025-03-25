@@ -8,10 +8,19 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import GlobalLogConsole from './components/GlobalLogConsole.vue'
+import { isLoggedIn } from '@/router/auth'
+import { useRouter } from 'vue-router'
 
+
+const router = useRouter()
 const logs = ref([])
 
 onMounted(() => {
+
+  if (!isLoggedIn() && router.currentRoute.value.name !== 'Login') {
+    router.push({ name: 'Login' })
+  }
+
   const socket = new WebSocket('ws://localhost:8000/ws/logs')
 
   socket.onmessage = (event) => {

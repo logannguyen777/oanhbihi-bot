@@ -7,7 +7,22 @@
       <li><router-link to="/train">🧠 Huấn luyện</router-link></li>
       <li><router-link to="/settings">⚙️ Cấu hình</router-link></li>
       <li><router-link to="/admin-chat">👩‍💼 Admin Chat</router-link></li>
-      <li><router-link to="/login">🚪 Đăng xuất</router-link></li>
+      <li>
+        <button @click="handleLogout" class="btn btn-outline btn-error w-full mt-2">
+          🚪 Đăng xuất
+        </button>
+      </li>
     </ul>
   </template>
+  
+  <script setup>
+  import { useRouter } from 'vue-router'
+  import { logout } from '@/router/auth'
+  
+  const router = useRouter()
+  
+  const handleLogout = () => {
+    logout(router)
+  }
+  </script>
   

@@ -13,7 +13,7 @@
       <div class="card bg-base-100 shadow">
         <div class="card-body">
           <h2 class="card-title">🧠 Personas</h2>
-          <p>{{ stats.personas }} bot persona</p>
+          <p>hihi</p>
         </div>
       </div>
 
@@ -48,11 +48,10 @@
 
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue'
-import { getCrawls, getWebPages, getAllConfigs, listPersonas } from '@/router/api'
+import { getCrawls, getWebPages, getAllConfigs } from '@/router/api'
 import LogConsole from '@/components/LogConsole.vue'
 
 const stats = ref({
-  personas: 0,
   crawls: 0,
   pages: 0,
   embedding: 0
@@ -66,12 +65,11 @@ let socket = null
 const fetchStats = async () => {
   try {
     const [p, c, w, o] = await Promise.all([
-      listPersonas(),
+      
       getCrawls(),
       getWebPages(),
       getAllConfigs()
     ])
-    stats.value.personas = p.data.length
     stats.value.crawls = c.data.length
     stats.value.pages = w.data.length
     stats.value.embedding = w.data.filter(x => x.embedding).length

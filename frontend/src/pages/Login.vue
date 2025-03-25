@@ -19,6 +19,8 @@
   import { ref } from 'vue'
   import { useRouter } from 'vue-router'
   import api from '@/router/api'
+  import { saveToken } from '@/router/auth'
+
   // Nếu dùng vue-sonner thì import:
   // import { toast } from 'vue-sonner'
   
@@ -36,10 +38,9 @@
       })
   
       if (res.status === 200 && res.data.token) {
-        localStorage.setItem('token', res.data.token) // ✅ Lưu token thật
-        // toast.success('✅ Đăng nhập thành công!')
-        window.$toast?.showToast?.('✅ Đăng nhập thành công!', 'success') // fallback
-        router.push('/dashboard') // ✅ Chuyển trang
+        saveToken(res.data.token) // ✅ đúng chuẩn
+        window.$toast?.showToast?.('✅ Đăng nhập thành công!', 'success')
+        router.push('/dashboard')
       } else {
         // toast.error('❌ Đăng nhập thất bại')
         window.$toast?.showToast?.('❌ Đăng nhập thất bại', 'error')
