@@ -36,6 +36,13 @@
       </div>
     </SectionCard>
 
+    <button @click="loginFacebook">🔗 Login Facebook</button>
+    <div v-if="pages.length">
+      <div v-for="p in pages" :key="p.id">
+        {{ p.name }}
+        <button @click="connectPage(p)">Kết nối</button>
+      </div>
+    </div>
     <!-- 💬 ZALO -->
     <SectionCard title="💬 Cấu hình Zalo API">
       <input v-model="config.zalo_verify_token" placeholder="Zalo Verify Token" class="input input-bordered w-full" />
@@ -134,4 +141,33 @@ onMounted(() => {
   connectLogsSocket()
 })
 onUnmounted(() => socket?.close())
+
+const pages = ref([])
+
+function loginFacebook() {
+  const fbAppId = 'YOUR_APP_ID'
+  const redirect = encodeURIComponent('https://your-domain.com/facebook/oauth/callback')
+  const state = localStorage.getItem("agent_id")
+  window.location.href = `https://www.facebook.com/v18.0/dialog/oauth?client_id=${fbAppId}&redirect_uri=${redirect}&scope=pages_show_list,pages_messaging,pages_manage_metadata,pages_read_engagement&state=${state}`
+}
+
+onMounted(async () => {
+  const url = new URL(window.location.href)
+  const code = url.searchParams.get("code")
+  const state = url.searchParams.get("state")
+  if (code && state) {
+    const res = await getFacebookPages(code, state)
+    pages.value = res.data
+  }
+})
+
+function connectPage(p) {
+  connectFacebookPage({
+    page_id: p.id,
+    page_name: p.name,
+    access_token: p.access_token,
+    agent_id: localStorage.getItem("agent_id")
+  }).then(() => alert("Đã kết nối page thành công!"))
+}
+
 </script>

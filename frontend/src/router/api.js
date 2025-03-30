@@ -56,6 +56,9 @@ export const getConfigByKey = (key) => api.get('/api/config', { params: { key } 
 export const setConfigByKey = (key, value) => api.post('/api/config', null, { params: { key, value } }) 
 export const saveSectionConfig = (endpoint, data) => api.post(endpoint, data)
 
+export const getFacebookPages = (code, state) => axios.get(`/facebook/oauth/callback?code=${code}&state=${state}`)
+export const connectFacebookPage = (data) => axios.post(`/api/facebook/pages`, data)
+
 
 // DASHBOARD
 export const getCrawls = () => api.get('/api/crawl')
