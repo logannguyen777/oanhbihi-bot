@@ -14,7 +14,7 @@ from models.config_model import AppConfig
 
 app = FastAPI()
 
-from routers import zalo, messenger, config, training, auth, persona, crawl, training_docs, logs_ws
+from routers import zalo, messenger, config, training, auth, persona, crawl, training_docs, logs_ws, facebook
 
 
 # Khởi tạo DB và pipeline khi app khởi động
@@ -64,6 +64,7 @@ app.include_router(crawl.router)
 app.include_router(get_admin_chat_router())
 app.include_router(logs_ws.router)
 app.include_router(training_docs.router)
+app.include_router(facebook.router)
 
 # Đăng ký endpoint xử lý RAG
 app.post("/chat")(chat_endpoint)
