@@ -43,10 +43,16 @@ async def receive_webhook(request: Request, db: Session = Depends(get_db)):
                 print(f"💬 Tin nhắn từ người dùng ({sender_id}): {user_message}")
 
                 # Lấy thông tin page
-                page = db.query(FacebookPage).filter_by(page_id=page_id).first()
-                if not page:
+                if page_id == "574045595797104":
+                    page = {
+                        "agent_id": "default_agent",
+                        "page_id": "574045595797104",
+                        "page_name": "Test Page",
+                        "access_token": "EAAHsXFhBuPsBO9W6wwOAZCH9HsI3S92paoCim2EFOyWv8Kdido3AhldeCxwLYmEkKJDGZB5HeFZBZANnofRkj9IawLRrM2oIoSxRs0hWBMqF2uSYJ1ZClYCOSKOe1MHpgZCddcj4ILrJw6ZBjwPZAFWqGGFw8mcEZCBMZCiEaUozUkuZBRA686BTilkZBFZBOVDfJyRzK7bO1fdK0ShfuY0lWNQZDZD"
+                    }
+                else:
                     print(f"❌ Không tìm thấy page_id {page_id}")
-                    continue  # Bỏ qua nếu không tìm thấy page
+                    continue
 
                 # Gọi vào router chat-rag-context
                 chat_request = ChatRequest(
