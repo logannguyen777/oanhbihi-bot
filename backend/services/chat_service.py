@@ -48,11 +48,11 @@ def chat_with_context_service(payload, db: Session):
 
     # 💬 Lưu tin nhắn của bot vào DB
     db.add(ChatLog(
-        user_id=user.id,
+        user_id=payload.sender_id,  # 👈 Messenger UUID lưu thẳng luôn vào đây
         session_id=payload.session_id,
         channel=payload.channel,
-        role=RoleEnum.bot,  # 🧠 DB vẫn lưu là 'bot'
-        message=bot_reply,
+        role=RoleEnum.user,
+        message=payload.message,
         timestamp=datetime.utcnow(),
     ))
     db.commit()
