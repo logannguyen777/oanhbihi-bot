@@ -56,7 +56,7 @@ async def receive_webhook(request: Request, db: Session = Depends(get_db)):
                 chat_request = ChatRequest(
                     sender_id=sender_id,
                     session_id=f"fb_{sender_id}",
-                    channel="facebook",
+                    channel="messenger",
                     message=user_message
                 )
 
