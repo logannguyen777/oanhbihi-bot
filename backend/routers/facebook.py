@@ -7,7 +7,7 @@ from schemas.facebook import FacebookPageCreate
 from services.facebook_service import send_message_to_user
 from services.chat_service import chat_with_context_service
 from schemas.chat import ChatRequest
-
+import json 
 from database import get_db
 from settings.facebook_config import *
 
