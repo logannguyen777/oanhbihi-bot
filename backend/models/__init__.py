@@ -10,3 +10,5 @@ from .config_model import AppConfig
 from .web_page import WebPage
 from .document import Document
 from .document_chunk import DocumentChunk
+from .trained_document import TrainedDocument
+from .facebook_page import FacebookPage

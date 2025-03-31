@@ -8,7 +8,7 @@ class FacebookPage(Base):
     __tablename__ = "facebook_pages"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid4)
-    agent_id = Column(UUID(as_uuid=True), ForeignKey("agents.id"))
+    agent_id = Column(UUID(as_uuid=True), ForeignKey("admin_users.id"), nullable=False)
     page_id = Column(String, unique=True)
     page_name = Column(String)
     access_token = Column(String)

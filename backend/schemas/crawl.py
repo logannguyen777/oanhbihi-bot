@@ -5,5 +5,6 @@ class CrawlConfigSchema(BaseModel):
     depth: int
     use_browser: bool
 
-    class Config:
-        orm_mode = True
+    model_config = {
+        "from_attributes": True
+    }
