@@ -9,6 +9,12 @@ RUN npm run build
 
 # Serve bằng nginx
 FROM nginx:alpine
+
+# ✨ Copy code build xong
 COPY --from=build /app/dist /usr/share/nginx/html
+
+# ✨ Copy cấu hình nginx đã bảo mật
+COPY ../nginx/frontend.conf /etc/nginx/conf.d/default.conf
+
 EXPOSE 80
 CMD ["nginx", "-g", "daemon off;"]
