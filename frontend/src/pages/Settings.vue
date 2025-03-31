@@ -145,8 +145,8 @@ onUnmounted(() => socket?.close())
 const pages = ref([])
 
 function loginFacebook() {
-  const fbAppId = 'YOUR_APP_ID'
-  const redirect = encodeURIComponent('https://your-domain.com/facebook/oauth/callback')
+  const fbAppId = '541356338559227'
+  const redirect = encodeURIComponent('https://backend.fta.thefirst.ai/facebook/oauth/callback')
   const state = localStorage.getItem("agent_id")
   window.location.href = `https://www.facebook.com/v18.0/dialog/oauth?client_id=${fbAppId}&redirect_uri=${redirect}&scope=pages_show_list,pages_messaging,pages_manage_metadata,pages_read_engagement&state=${state}`
 }
