@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Request, Depends
+from fastapi.responses import PlainTextResponse
 from sqlalchemy.orm import Session
 import requests
 from models.facebook_page import FacebookPage
@@ -9,14 +10,14 @@ from settings.facebook_config import *
 router = APIRouter()
 
 # 1. Webhook verification
-@router.get("/facebook/webhook")
+@router.get("/facebook/webhook", response_class=PlainTextResponse)
 def verify_webhook(request: Request):
     mode = request.query_params.get("hub.mode")
     token = request.query_params.get("hub.verify_token")
     challenge = request.query_params.get("hub.challenge")
     if mode == "subscribe" and token == FACEBOOK_VERIFY_TOKEN:
-        return int(challenge)
-    return {"status": "not verified"}
+        return challenge  # trả về nguyên văn chuỗi challenge dưới dạng text
+    return "Verification failed"
 
 # 2. Nhận tin nhắn
 @router.post("/facebook/webhook")
