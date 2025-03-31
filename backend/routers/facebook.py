@@ -10,14 +10,16 @@ from settings.facebook_config import *
 router = APIRouter()
 
 # 1. Webhook verification
-@router.get("/facebook/webhook", response_class=PlainTextResponse)
+@router.get("/facebook/webhook")
 def verify_webhook(request: Request):
     mode = request.query_params.get("hub.mode")
     token = request.query_params.get("hub.verify_token")
     challenge = request.query_params.get("hub.challenge")
+
     if mode == "subscribe" and token == FACEBOOK_VERIFY_TOKEN:
-        return challenge  # trả về nguyên văn chuỗi challenge dưới dạng text
-    return "Verification failed"
+        return Response(content=str(challenge), media_type="text/plain", status_code=200)
+
+    return Response(content="Verification failed", media_type="text/plain", status_code=403)
 
 # 2. Nhận tin nhắn
 @router.post("/facebook/webhook")
