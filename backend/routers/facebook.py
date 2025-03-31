@@ -29,7 +29,6 @@ def verify_webhook(request: Request):
     return Response(content="Verification failed", media_type="text/plain", status_code=403)
 
 # 2. Nhận tin nhắn
-@router.post("/facebook/webhook")
 async def receive_webhook(request: Request, db: Session = Depends(get_db)):
     data = await request.json()
     print("📥 Facebook Webhook Received Data:", json.dumps(data, indent=2, ensure_ascii=False))
@@ -42,37 +41,35 @@ async def receive_webhook(request: Request, db: Session = Depends(get_db)):
                 user_message = event["message"]["text"]
                 print(f"💬 Tin nhắn từ người dùng ({sender_id}): {user_message}")
 
-                # Lấy thông tin page
+                # Hardcode fix cứng không cần DB
                 if page_id == "574045595797104":
                     page = {
                         "agent_id": "default_agent",
                         "page_id": "574045595797104",
-                        "page_name": "Test Page",
+                        "page_name": "FTA DNU Page",
                         "access_token": "EAAHsXFhBuPsBO9W6wwOAZCH9HsI3S92paoCim2EFOyWv8Kdido3AhldeCxwLYmEkKJDGZB5HeFZBZANnofRkj9IawLRrM2oIoSxRs0hWBMqF2uSYJ1ZClYCOSKOe1MHpgZCddcj4ILrJw6ZBjwPZAFWqGGFw8mcEZCBMZCiEaUozUkuZBRA686BTilkZBFZBOVDfJyRzK7bO1fdK0ShfuY0lWNQZDZD"
                     }
                 else:
                     print(f"❌ Không tìm thấy page_id {page_id}")
-                    continue
+                    continue  # bỏ qua nếu không khớp
 
-                # Gọi vào router chat-rag-context
                 chat_request = ChatRequest(
                     sender_id=sender_id,
-                    session_id=f"fb_{sender_id}",  # session_id tùy chỉnh cho từng người dùng Facebook
+                    session_id=f"fb_{sender_id}",
                     channel="facebook",
                     message=user_message
                 )
 
                 try:
                     reply_data = chat_with_context_service(chat_request, db)
-                    bot_reply = reply_data  # Do hàm chat_with_context_service trả về trực tiếp message
+                    bot_reply = reply_data
                     print(f"🤖 AI đã phản hồi: {bot_reply}")
                 except Exception as e:
                     print(f"❌ Lỗi khi gọi AI: {e}")
                     bot_reply = "Ui, Oanh gặp chút xíu trục trặc rồi, chờ Oanh chút nhé!"
 
-                # Gửi trả lời lại Facebook Messenger
                 try:
-                    send_message_to_user(sender_id, bot_reply, page.access_token)
+                    send_message_to_user(sender_id, bot_reply, page["access_token"])
                     print("✅ Đã gửi trả lời cho người dùng qua Messenger!")
                 except Exception as e:
                     print(f"❌ Lỗi khi gửi tin nhắn Facebook: {e}")
