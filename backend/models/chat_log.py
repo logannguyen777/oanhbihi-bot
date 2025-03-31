@@ -8,11 +8,13 @@ class ChatLog(Base):
     __tablename__ = "chat_logs"
 
     id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(String, nullable=True)  # 👈 sửa ở đây
+    user_id = Column(String, nullable=True)
     session_id = Column(String, nullable=True)
     channel = Column(Enum(ChannelEnum))
     role = Column(Enum(RoleEnum))
     message = Column(Text)
     timestamp = Column(DateTime, default=datetime.utcnow)
     is_read = Column(Boolean, default=False)
+
+    user = relationship("User", back_populates="chat_logs", viewonly=True)
 

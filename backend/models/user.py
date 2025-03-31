@@ -16,7 +16,12 @@ class User(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
-    chat_logs = relationship("ChatLog", back_populates="user")
+    chat_logs = relationship(
+    "ChatLog",
+    primaryjoin="foreign(ChatLog.user_id) == cast(User.id, String)",
+    back_populates="user",
+    viewonly=True
+    )
 
 
 def get_or_create_user(sender_id: str, channel: ChannelEnum, db: Session):
