@@ -4,6 +4,10 @@ from sqlalchemy.orm import Session
 import requests
 from models.facebook_page import FacebookPage
 from schemas.facebook import FacebookPageCreate
+from services.facebook_service import send_message_to_user
+from services.chat_service import chat_with_context_service
+from schemas.chat import ChatRequest
+
 from database import get_db
 from settings.facebook_config import *
 
@@ -28,16 +32,45 @@ def verify_webhook(request: Request):
 @router.post("/facebook/webhook")
 async def receive_webhook(request: Request, db: Session = Depends(get_db)):
     data = await request.json()
+    print("📥 Facebook Webhook Received Data:", json.dumps(data, indent=2, ensure_ascii=False))
+
     for entry in data.get("entry", []):
         page_id = entry["id"]
         for event in entry.get("messaging", []):
-            sender = event["sender"]["id"]
+            sender_id = event["sender"]["id"]
             if "message" in event and "text" in event["message"]:
-                text = event["message"]["text"]
+                user_message = event["message"]["text"]
+                print(f"💬 Tin nhắn từ người dùng ({sender_id}): {user_message}")
+
+                # Lấy thông tin page
                 page = db.query(FacebookPage).filter_by(page_id=page_id).first()
-                if page:
-                    reply = await run_rag_on_agent(page.agent_id, text)
-                    send_fb_message(sender, reply, page.access_token)
+                if not page:
+                    print(f"❌ Không tìm thấy page_id {page_id}")
+                    continue  # Bỏ qua nếu không tìm thấy page
+
+                # Gọi vào router chat-rag-context
+                chat_request = ChatRequest(
+                    sender_id=sender_id,
+                    session_id=f"fb_{sender_id}",  # session_id tùy chỉnh cho từng người dùng Facebook
+                    channel="facebook",
+                    message=user_message
+                )
+
+                try:
+                    reply_data = chat_with_context_service(chat_request, db)
+                    bot_reply = reply_data  # Do hàm chat_with_context_service trả về trực tiếp message
+                    print(f"🤖 AI đã phản hồi: {bot_reply}")
+                except Exception as e:
+                    print(f"❌ Lỗi khi gọi AI: {e}")
+                    bot_reply = "Ui, Oanh gặp chút xíu trục trặc rồi, chờ Oanh chút nhé!"
+
+                # Gửi trả lời lại Facebook Messenger
+                try:
+                    send_message_to_user(sender_id, bot_reply, page.access_token)
+                    print("✅ Đã gửi trả lời cho người dùng qua Messenger!")
+                except Exception as e:
+                    print(f"❌ Lỗi khi gửi tin nhắn Facebook: {e}")
+
     return {"status": "ok"}
 
 # 3. OAuth callback
