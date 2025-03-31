@@ -10,6 +10,7 @@ from settings.facebook_config import *
 router = APIRouter()
 
 # 1. Webhook verification
+@router.get("/facebook/webhook", response_class=PlainTextResponse)
 def verify_webhook(request: Request):
     mode = request.query_params.get("hub.mode")
     token = request.query_params.get("hub.verify_token")
