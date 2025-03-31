@@ -1,45 +1,56 @@
-import openai
-from openai import OpenAI
+from sqlalchemy.orm import Session
+from datetime import datetime
 from models.chat_log import ChatLog
 from models.enum import RoleEnum
 from models.user import get_or_create_user
-from sqlalchemy.orm import Session
-from datetime import datetime
 from .utils.context import get_recent_context
-
-client = OpenAI()  # Tự động lấy key từ ENV `OPENAI_API_KEY`
+from services.openai_client import get_openai_client
 
 
 def chat_with_context_service(payload, db: Session):
-    # 👤 Tạo hoặc lấy user từ DB
+    # 👤 Tạo hoặc lấy user
     user = get_or_create_user(payload.sender_id, payload.channel, db)
 
     # 📝 Ghi lại tin nhắn của người dùng
-    db.add(ChatLog(
-        user_id=user.id,
-        session_id=payload.session_id,
-        channel=payload.channel,
-        role=RoleEnum.user,
-        message=payload.message,
-        timestamp=datetime.utcnow(),
-    ))
-    db.commit()
-
-    # 📚 Lấy lại lịch sử chat gần đây (context)
-    context_logs = get_recent_context(user.id, db)
-
-    messages = []
-    for log in context_logs:
-        role = log.role.value
-        if role == "bot":
-            role = "assistant"  # ✅ SDK mới yêu cầu role chuẩn
-        messages.append({"role": role, "content": log.message})
-
-    # ➕ Thêm câu mới của user
-    messages.append({"role": "user", "content": payload.message})
-
     try:
-        # 🤖 Gọi OpenAI bằng SDK mới
+        db.add(ChatLog(
+            user_id=user.id,
+            session_id=payload.session_id,
+            channel=payload.channel,
+            role=RoleEnum.user,
+            message=payload.message,
+            timestamp=datetime.utcnow(),
+        ))
+        db.commit()
+    except Exception as e:
+        print(f"❌ Lỗi ghi log user: {e}")
+        db.rollback()
+
+    # 📚 Lấy context gần đây
+    try:
+        context_logs = get_recent_context(user.id, db)
+        messages = []
+
+        for log in context_logs:
+            role = log.role.value
+            if role == "bot":
+                role = "assistant"
+            messages.append({"role": role, "content": log.message})
+
+        messages.append({"role": "user", "content": payload.message})
+    except Exception as e:
+        print(f"❌ Lỗi khi lấy context: {e}")
+        messages = [{"role": "user", "content": payload.message}]
+
+    # 🔑 Lấy OpenAI client từ cấu hình DB
+    try:
+        client = get_openai_client(db)
+    except Exception as e:
+        print(f"❌ Lỗi khi lấy OpenAI client: {e}")
+        return "Oanh Bihi đang hơi lag 🥺, bạn thử lại sau chút xíu nha~"
+
+    # 🤖 Gọi OpenAI lấy phản hồi
+    try:
         response = client.chat.completions.create(
             model="gpt-3.5-turbo",
             messages=messages,
@@ -50,15 +61,19 @@ def chat_with_context_service(payload, db: Session):
         print(f"❌ Lỗi khi gọi OpenAI: {e}")
         bot_reply = "Oanh Bihi đang hơi lag 🥺, bạn thử lại sau chút xíu nha~"
 
-    # 💬 Lưu phản hồi của bot vào DB
-    db.add(ChatLog(
-        user_id=user.id,
-        session_id=payload.session_id,
-        channel=payload.channel,
-        role=RoleEnum.bot,  # ✅ Đúng role
-        message=bot_reply,
-        timestamp=datetime.utcnow(),
-    ))
-    db.commit()
+    # 💬 Lưu phản hồi của bot
+    try:
+        db.add(ChatLog(
+            user_id=user.id,
+            session_id=payload.session_id,
+            channel=payload.channel,
+            role=RoleEnum.bot,
+            message=bot_reply,
+            timestamp=datetime.utcnow(),
+        ))
+        db.commit()
+    except Exception as e:
+        print(f"❌ Lỗi ghi log bot: {e}")
+        db.rollback()
 
     return bot_reply
