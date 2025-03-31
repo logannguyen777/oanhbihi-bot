@@ -1,0 +1,67 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: ankane/pgvector
+    container_name: oanhbihi-postgres
+    restart: always
+    environment:
+      POSTGRES_DB: chatbot_db
+      POSTGRES_USER: chatbot_user
+      POSTGRES_PASSWORD: secretpassword
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - oanhbihi_network
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.prod
+    container_name: oanhbihi-backend
+    restart: always
+    depends_on:
+      - postgres
+    environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - DATABASE_URL=postgresql://chatbot_user:secretpassword@postgres:5432/chatbot_db
+    expose:
+      - "8000"
+    networks:
+      - oanhbihi_network
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.prod
+    container_name: oanhbihi-frontend
+    restart: always
+    environment:
+      - VITE_BACKEND_URL=https://backend.fta.thefirst.ai
+    expose:
+      - "80"
+    networks:
+      - oanhbihi_network
+
+  nginx:
+    image: nginx:alpine
+    container_name: oanhbihi-nginx
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf
+      - ./nginx/certs:/etc/nginx/certs
+    depends_on:
+      - frontend
+      - backend
+    networks:
+      - oanhbihi_network
+
+volumes:
+  postgres_data:
+
+networks:
+  oanhbihi_network:
+    driver: bridge
