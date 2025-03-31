@@ -39,7 +39,7 @@ services:
     environment:
       - VITE_BACKEND_URL=https://backend.fta.thefirst.ai
     expose:
-      - "80"
+      - "3000"
     networks:
       - oanhbihi_network
 
