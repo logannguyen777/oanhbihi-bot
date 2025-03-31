@@ -2,20 +2,19 @@ from fastapi import APIRouter, Request, Depends
 from fastapi.responses import PlainTextResponse, Response
 from sqlalchemy.orm import Session
 import requests
-from models.facebook_page import FacebookPage
 from schemas.facebook import FacebookPageCreate
 from services.facebook_service import send_message_to_user
 from services.chat_service import chat_with_context_service
 from schemas.chat import ChatRequest
-import json 
+import json
 from database import get_db
-from settings.facebook_config import *
+from settings.facebook_config import FACEBOOK_APP_ID, FACEBOOK_APP_SECRET, FACEBOOK_REDIRECT_URI, FACEBOOK_VERIFY_TOKEN
 
-router = APIRouter()
+router = APIRouter(prefix="/facebook", tags=["Facebook"])
 
 # 1. Webhook verification
-@router.get("/facebook/webhook", response_class=PlainTextResponse)
-def verify_webhook(request: Request):
+@router.get("/webhook", response_class=PlainTextResponse)
+async def verify_webhook(request: Request):
     mode = request.query_params.get("hub.mode")
     token = request.query_params.get("hub.verify_token")
     challenge = request.query_params.get("hub.challenge")
@@ -28,7 +27,8 @@ def verify_webhook(request: Request):
 
     return Response(content="Verification failed", media_type="text/plain", status_code=403)
 
-# 2. Nhận tin nhắn
+# 2. Nhận tin nhắn từ Facebook Messenger
+@router.post("/webhook")
 async def receive_webhook(request: Request, db: Session = Depends(get_db)):
     data = await request.json()
     print("📥 Facebook Webhook Received Data:", json.dumps(data, indent=2, ensure_ascii=False))
@@ -41,7 +41,7 @@ async def receive_webhook(request: Request, db: Session = Depends(get_db)):
                 user_message = event["message"]["text"]
                 print(f"💬 Tin nhắn từ người dùng ({sender_id}): {user_message}")
 
-                # Hardcode fix cứng không cần DB
+                # Hardcode fix cứng không dùng DB
                 if page_id == "574045595797104":
                     page = {
                         "agent_id": "default_agent",
@@ -51,7 +51,7 @@ async def receive_webhook(request: Request, db: Session = Depends(get_db)):
                     }
                 else:
                     print(f"❌ Không tìm thấy page_id {page_id}")
-                    continue  # bỏ qua nếu không khớp
+                    continue
 
                 chat_request = ChatRequest(
                     sender_id=sender_id,
@@ -61,8 +61,7 @@ async def receive_webhook(request: Request, db: Session = Depends(get_db)):
                 )
 
                 try:
-                    reply_data = chat_with_context_service(chat_request, db)
-                    bot_reply = reply_data
+                    bot_reply = chat_with_context_service(chat_request, db)
                     print(f"🤖 AI đã phản hồi: {bot_reply}")
                 except Exception as e:
                     print(f"❌ Lỗi khi gọi AI: {e}")
@@ -76,10 +75,9 @@ async def receive_webhook(request: Request, db: Session = Depends(get_db)):
 
     return {"status": "ok"}
 
-# 3. OAuth callback
-@router.get("/facebook/oauth/callback")
+# 3. OAuth callback từ Facebook (để frontend lấy danh sách page)
+@router.get("/oauth/callback")
 def facebook_oauth_callback(code: str, state: str):
-    # 1. Exchange code for access token
     token_url = "https://graph.facebook.com/v18.0/oauth/access_token"
     params = {
         "client_id": FACEBOOK_APP_ID,
@@ -90,13 +88,12 @@ def facebook_oauth_callback(code: str, state: str):
     token_res = requests.get(token_url, params=params).json()
     user_access_token = token_res.get("access_token")
 
-    # 2. Get pages
     accounts_url = "https://graph.facebook.com/v18.0/me/accounts"
     pages = requests.get(accounts_url, params={"access_token": user_access_token}).json()
-    return pages["data"]  # frontend sẽ hiển thị list page cho user chọn
+    return pages.get("data", [])
 
-# 4. Lưu page đã chọn
-@router.post("/api/facebook/pages")
+# 4. Lưu page đã chọn (optional nếu sau này anh cần lưu vào DB)
+@router.post("/pages")
 def save_facebook_page(data: FacebookPageCreate, db: Session = Depends(get_db)):
     page = FacebookPage(
         agent_id=data.agent_id,
@@ -108,8 +105,7 @@ def save_facebook_page(data: FacebookPageCreate, db: Session = Depends(get_db)):
     db.add(page)
     db.commit()
 
-    # Subscribed webhook
-    url = f"https://graph.facebook.com/v18.0/me/subscribed_apps"
+    subscribe_url = f"https://graph.facebook.com/v18.0/me/subscribed_apps"
     params = {"access_token": data.access_token}
-    requests.post(url, params=params)
+    requests.post(subscribe_url, params=params)
     return {"status": "connected"}
