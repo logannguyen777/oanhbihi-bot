@@ -1,10 +1,14 @@
 import openai
+from openai import OpenAI
 from models.chat_log import ChatLog
 from models.enum import RoleEnum
 from models.user import get_or_create_user
 from sqlalchemy.orm import Session
 from datetime import datetime
 from .utils.context import get_recent_context
+
+client = OpenAI()  # Tự động lấy key từ ENV `OPENAI_API_KEY`
+
 
 def chat_with_context_service(payload, db: Session):
     # 👤 Tạo hoặc lấy user từ DB
@@ -28,15 +32,15 @@ def chat_with_context_service(payload, db: Session):
     for log in context_logs:
         role = log.role.value
         if role == "bot":
-            role = "assistant"  # ✅ Chuyển 'bot' → 'assistant'
+            role = "assistant"  # ✅ SDK mới yêu cầu role chuẩn
         messages.append({"role": role, "content": log.message})
 
     # ➕ Thêm câu mới của user
     messages.append({"role": "user", "content": payload.message})
 
     try:
-        # 🤖 Gọi OpenAI để lấy phản hồi
-        response = openai.ChatCompletion.create(
+        # 🤖 Gọi OpenAI bằng SDK mới
+        response = client.chat.completions.create(
             model="gpt-3.5-turbo",
             messages=messages,
             temperature=0.7,
@@ -46,13 +50,13 @@ def chat_with_context_service(payload, db: Session):
         print(f"❌ Lỗi khi gọi OpenAI: {e}")
         bot_reply = "Oanh Bihi đang hơi lag 🥺, bạn thử lại sau chút xíu nha~"
 
-    # 💬 Lưu tin nhắn của bot vào DB
+    # 💬 Lưu phản hồi của bot vào DB
     db.add(ChatLog(
-        user_id=user.messenger_psid,  # 👈 Messenger UUID lưu thẳng luôn vào đây
+        user_id=user.id,
         session_id=payload.session_id,
         channel=payload.channel,
-        role=RoleEnum.user,
-        message=payload.message,
+        role=RoleEnum.bot,  # ✅ Đúng role
+        message=bot_reply,
         timestamp=datetime.utcnow(),
     ))
     db.commit()
