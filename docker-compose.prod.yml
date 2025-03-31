@@ -52,12 +52,29 @@ services:
       - "443:443"
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf
-#      - ./nginx/certs:/etc/nginx/certs
+      - ./certbot/www:/var/www/certbot
+      - ./certbot/conf:/etc/letsencrypt
     depends_on:
       - frontend
       - backend
     networks:
       - oanhbihi_network
+
+  certbot:
+    image: certbot/certbot
+    container_name: oanhbihi-certbot
+    volumes:
+      - ./certbot/www:/var/www/certbot
+      - ./certbot/conf:/etc/letsencrypt
+    entrypoint: "/bin/sh -c"
+    command: >
+      "certbot certonly --webroot
+      --webroot-path=/var/www/certbot
+      --email your@email.com
+      --agree-tos
+      --no-eff-email
+      -d fta.thefirst.ai
+      -d backend.fta.thefirst.ai"
 
 volumes:
   postgres_data:
