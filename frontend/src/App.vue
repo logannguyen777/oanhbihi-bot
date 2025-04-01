@@ -21,8 +21,9 @@ onMounted(() => {
     router.push({ name: 'Login' })
   }
 
-  const socket = new WebSocket('ws://backend.fta.thefirst.ai/ws/logs')
-
+  const socket = new WebSocket(
+    `${location.protocol === 'https:' ? 'wss' : 'ws'}://backend.fta.thefirst.ai/ws/logs`
+  )
   socket.onmessage = (event) => {
     const msg = event.data
     if (msg !== '__chat_update__') {
