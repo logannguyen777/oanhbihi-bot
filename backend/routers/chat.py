@@ -12,7 +12,7 @@ from services.utils.embedding import generate_embedding
 from services.utils.chunk_retrieval import search_chunks_from_documents, search_chunks_from_web
 from openai import OpenAI
 
-chat_router = APIRouter(prefix="/api", tags=["Chat"])
+chat_router = APIRouter(tags=["Chat"]) 
 
 
 def get_db():
