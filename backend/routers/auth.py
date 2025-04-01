@@ -20,7 +20,7 @@ def get_db():
     finally:
         db.close()
 
-@router.post("/api/auth/login")
+@router.post("/login")
 def login(payload: LoginPayload, db: Session = Depends(get_db)):
     user = db.query(AdminUser).filter(AdminUser.username == payload.username).first()
     if not user or not bcrypt.verify(payload.password, user.password_hash):
