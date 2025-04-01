@@ -63,7 +63,7 @@ app.include_router(persona.router)
 app.include_router(crawl.router)
 app.include_router(get_admin_chat_router())
 app.include_router(logs_ws.router)
-app.include_router(training_docs_router, prefix="/api/training")
+app.include_router(training_docs_router, prefix="/training")
 app.include_router(facebook.router)
 
 # Đăng ký endpoint xử lý RAG
