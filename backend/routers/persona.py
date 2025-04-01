@@ -6,7 +6,7 @@ from database import get_db
 from models import BotPersona
 from services.persona_service import get_personas, get_persona_by_id, create_or_update_persona
 
-router = APIRouter(prefix="/api/persona", tags=["persona"])
+router = APIRouter(prefix="/persona", tags=["persona"])
 
 class PersonaIn(BaseModel):
     name: str

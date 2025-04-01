@@ -17,7 +17,7 @@ import urllib.parse
 from urllib.parse import urlparse, unquote
 
 
-router = APIRouter(prefix="/api/crawl", tags=["crawl"])
+router = APIRouter(prefix="/crawl", tags=["crawl"])
 
 # ✅ Schema Pydantic để nhận request
 class CrawlIn(BaseModel):

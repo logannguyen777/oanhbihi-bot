@@ -5,7 +5,7 @@ from services import config_service
 from models.config_model import AppConfig  # Nhớ import nếu chưa có
 from typing import Optional
 
-router = APIRouter(prefix="/api/config", tags=["Config"])
+router = APIRouter(prefix="/config", tags=["Config"])
 
 # 🔹 Lấy giá trị config theo key
 @router.get("/{key}", response_model=str)

@@ -11,7 +11,7 @@ from models.trained_document import TrainedDocument
 from routers.logs_ws import broadcast_log
 from services.training_service import train_all
 
-router = APIRouter(prefix="/api/train", tags=["Train"])
+router = APIRouter(prefix="/train", tags=["Train"])
 UPLOAD_FOLDER = "downloads"
 
 

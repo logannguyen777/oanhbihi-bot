@@ -29,7 +29,7 @@ def get_db():
 def get_admin_chat_router():
     router = APIRouter()
 
-    @router.get("/api/admin/conversations")
+    @router.get("/admin/conversations")
     def list_conversations(db: Session = Depends(get_db)):
         users = db.query(User).all()
         data = []
@@ -55,7 +55,7 @@ def get_admin_chat_router():
             })
         return {"users": data}
 
-    @router.get("/api/admin/conversations/{user_id}")
+    @router.get("/admin/conversations/{user_id}")
     def get_user_conversation(user_id: int, db: Session = Depends(get_db)):
         logs = (
             db.query(ChatLog)
@@ -74,7 +74,7 @@ def get_admin_chat_router():
         ]
         return {"user_id": user_id, "conversation": conversation}
 
-    @router.post("/api/admin/toggle-bot")
+    @router.post("/admin/toggle-bot")
     async def toggle_bot(payload: TogglePayload):
         status = bot_control.get(payload.user_id, {"bot_enabled": True})
         status["bot_enabled"] = not status["bot_enabled"]
@@ -82,7 +82,7 @@ def get_admin_chat_router():
         await broadcast_chat_update()  # ✅ emit bằng WebSocket
         return {"message": f"Đã cập nhật trạng thái bot cho user {payload.user_id}"}
 
-    @router.post("/api/admin/reply")
+    @router.post("/admin/reply")
     async def admin_reply(payload: AdminReplyPayload, db: Session = Depends(get_db)):
         log = ChatLog(
             user_id=payload.user_id,
