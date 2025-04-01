@@ -8,13 +8,13 @@ from db.init_db import init_db
 from routers.admin_chat import get_admin_chat_router
 from routers.chat import router as chat_router
 from rag.pipeline import init_rag_pipeline, chat_endpoint, chat_history_endpoint
-from routers import logs_ws
 from models.config_model import AppConfig
+from routers.training_docs import router as training_docs_router
 
 
 app = FastAPI()
 
-from routers import zalo, messenger, config, training, auth, persona, crawl, training_docs, logs_ws, facebook
+from routers import zalo, messenger, config, training, auth, persona, crawl, logs_ws, facebook
 
 
 # Khởi tạo DB và pipeline khi app khởi động
