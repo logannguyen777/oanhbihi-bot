@@ -6,7 +6,7 @@ from models.web_page import WebPage
 from models.document import Document
 from models.document_chunk import DocumentChunk
 
-router = APIRouter(prefix="/api/training", tags=["Training"])
+router = APIRouter(tags=["Training"])
 
 @router.get("/docs")
 def get_all_trained_docs(db: Session = Depends(get_db)):
