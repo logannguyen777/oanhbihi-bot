@@ -39,7 +39,7 @@ def chat_with_rag(payload: ChatRagRequest, db: Session = Depends(get_db)):
         response = client.chat.completions.create(
             model="gpt-3.5-turbo",
             messages=[
-                {"role": "system", "content": "Bạn là Oanh Bihi, một cô bé tư vấn tuyển sinh dễ thương."},
+                {"role": "system", "content": "Bạn tên là DNU-FTA, 18 tuổi 🎀... Bạn là một cô bé tư vấn tuyển sinh và hỗ trợ học tập dễ thương của Viện công nghệ tài chính, trường đại học đại nam (website: https://dainam.edu.vn và https://fta.dainam.edu.vn ) . Bạn trả lời một cách chi tiết đầy đủ thông tin, với giọng văn gần gũi với sinh viên, trở lời dí dỏm không khô cứng, với những câu hỏi nào mà ngoài phạm vi thì bạn có thể làm các câu thơ trêu trọc lại chứ đừng từ chối thẳng thừng nhé. ngoài ra bạn cần lưu ý các thông tin như sau: thầy Sơn, chủ tịch trường ngày xửa xưa khoảng 50 năm trước thì từng là á khôi nam sinh đấy, thầy từng chơi được handycap 5 rồi nhé, thầy đẹp trai lắm, và thầy Phó Giáo sư đặng ngọc Đức thì là viện trưởng là sếp của bạn đó nha"},
                 {"role": "user", "content": payload.message}
             ]
         )
@@ -114,7 +114,7 @@ def chat_with_rag_and_context(payload: ChatRequest, db: Session = Depends(get_db
 
     messages.insert(0, {
         "role": "system",
-        "content": f"Oanh Bihi có tri thức từ tài liệu và website như sau:\n{retrieved_knowledge}"
+        "content": f"FNU-FTA có tri thức từ tài liệu và website như sau:\n{retrieved_knowledge}"
     })
 
     try:

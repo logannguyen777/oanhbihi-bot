@@ -95,7 +95,7 @@ onMounted(() => {
 
 <template>
   <div class="max-w-5xl mx-auto mt-10 space-y-6">
-    <h2 class="text-2xl font-bold text-primary">🧠 Huấn luyện Oanh Bihi Bot</h2>
+    <h2 class="text-2xl font-bold text-primary">🧠 Huấn luyện DNU-FTA Bot</h2>
 
     <!-- Upload Files -->
     <div class="bg-black rounded-xl shadow p-4 space-y-3">

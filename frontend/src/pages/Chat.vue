@@ -1,6 +1,6 @@
 <template>
     <div class="max-w-3xl mx-auto p-6 space-y-6">
-      <h2 class="text-2xl font-bold text-primary mb-4">💬 Chat với Oanh Bihi</h2>
+      <h2 class="text-2xl font-bold text-primary mb-4">💬 Chat với DNU - FTA</h2>
   
       <!-- Chế độ chọn -->
       <div class="flex flex-wrap gap-4">
@@ -25,10 +25,10 @@
           <img
             :src="msg.from === 'bot' ? botAvatar : userAvatar"
             class="w-8 h-8 rounded-full"
-            :alt="msg.from === 'bot' ? 'Oanh Bihi' : 'Bạn'"
+            :alt="msg.from === 'bot' ? 'DNU-FTA' : 'Bạn'"
           />
           <div class="space-y-1">
-            <div class="text-xs text-gray-500">{{ msg.from === 'bot' ? 'Oanh Bihi' : 'Bạn' }} • {{ msg.timestamp }}</div>
+            <div class="text-xs text-gray-500">{{ msg.from === 'bot' ? 'DNU-FTA' : 'Bạn' }} • {{ msg.timestamp }}</div>
             <div class="p-3 rounded-2xl text-sm whitespace-pre-wrap max-w-[300px]" :class="{
               'bg-blue-500 text-white': msg.from === 'user',
               'bg-gray-100 text-gray-800': msg.from === 'bot',
@@ -40,7 +40,7 @@
         </div>
   
         <div v-if="isLoading" class="text-center text-sm text-gray-500 mt-2 animate-pulse">
-          Đang gửi câu hỏi cho Oanh Bihi... ⏳
+          Đang gửi câu hỏi cho DNU-FTA ... ⏳
         </div>
       </div>
   
